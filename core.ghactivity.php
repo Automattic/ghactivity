@@ -138,7 +138,8 @@ class GHActivity_Calls {
 
 					// Build Post Content.
 					$post_content = sprintf(
-						'%1$s, including %2$s commits.',
+						/* translators: %1$s is an action taken, %2$s is a number of commits. */
+						__( '%1$s, including %2$s commits.', 'ghactivity' ),
 						$this->get_event_type( $event->type, $event->payload->action ),
 						( $meta ? $meta['_github_commits'] : 'no' )
 					);
