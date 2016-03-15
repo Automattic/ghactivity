@@ -131,8 +131,16 @@ class GHActivity_Calls {
 						$meta = false;
 					}
 
+					// Avoid errors when no action is attached to the event.
+					if ( isset( $event->payload->action ) ) {
+						$action = $event->payload->action;
+					} else {
+						$action = '';
+					}
+
+					// Create taxonomies
 					$taxonomies = array(
-						'ghactivity_event_type' => esc_html( $this->get_event_type( $event->type, $event->payload->action ) ),
+						'ghactivity_event_type' => esc_html( $this->get_event_type( $event->type, $action ) ),
 						'ghactivity_repo' => esc_html( $event->repo->name ),
 					);
 
@@ -140,7 +148,7 @@ class GHActivity_Calls {
 					$post_content = sprintf(
 						/* translators: %1$s is an action taken, %2$s is a number of commits. */
 						__( '%1$s, including %2$s commits.', 'ghactivity' ),
-						esc_html( $this->get_event_type( $event->type, $event->payload->action ) ),
+						esc_html( $this->get_event_type( $event->type, $action ) ),
 						( $meta ? $meta['_github_commits'] : 'no' )
 					);
 
