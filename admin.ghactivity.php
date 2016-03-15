@@ -33,6 +33,13 @@ function ghactivity_options_init() {
 		'ghactivity'
 	);
 	add_settings_field(
+		'username',
+		__( 'GitHub Username', 'ghactivity' ),
+		'ghactivity_app_settings_username_callback',
+		'ghactivity',
+		'ghactivity_app_settings'
+	);
+	add_settings_field(
 		'client_id',
 		__( 'Client ID', 'ghactivity' ),
 		'ghactivity_app_settings_id_callback',
@@ -61,7 +68,7 @@ function ghactivity_app_settings_callback() {
 		esc_url( 'https://github.com/settings/applications/new' )
 	);
 	echo '<br/>';
-	_e( 'Once you created your app, copy the "Client ID" and "Client Secret" values below:', 'ghactivity' );
+	_e( 'Once you created your app, copy the "Client ID" and "Client Secret" values below. You will also want to enter your GitHub username.', 'ghactivity' );
 	echo '</p>';
 }
 
@@ -85,6 +92,15 @@ function ghactivity_app_settings_secret_callback() {
 	printf(
 		'<input type="text" name="ghactivity[client_secret]" value="%s" class="regular-text" />',
 		isset( $options['client_secret'] ) ? esc_attr( $options['client_secret'] ) : ''
+	);
+}
+
+// GitHub Username option.
+function ghactivity_app_settings_username_callback() {
+	$options = (array) get_option( 'ghactivity' );
+	printf(
+		'<input type="text" name="ghactivity[username]" value="%s" />',
+		isset( $options['username'] ) ? esc_attr( $options['username'] ) : ''
 	);
 }
 
@@ -117,8 +133,9 @@ function ghactivity_do_settings() {
  * @return array $input Sanitized options.
  */
 function ghactivity_settings_validate( $input ) {
-	$input['client_id']      = sanitize_key( $input['client_id'] );
-	$input['client_secret']  = sanitize_key( $input['client_secret'] );
+	$input['username']      = sanitize_user( $input['username'] );
+	$input['client_id']     = sanitize_key( $input['client_id'] );
+	$input['client_secret'] = sanitize_key( $input['client_secret'] );
 
 	return $input;
 }
