@@ -112,7 +112,7 @@ class GHActivity_Calls {
 	 * @since 1.0
 	 */
 	public function publish_event() {
-		error_log( 'gathering scheduled gh activity');
+
 		$github_events = $this->get_github_activity();
 
 		/**
@@ -122,7 +122,7 @@ class GHActivity_Calls {
 
 			foreach( $github_events as $event ) {
 				// If no post exists with that ID, let's go on and publish a post.
-				if ( 0 === post_exists( $event->id ) ) {
+				if ( is_null( get_page_by_title( $event->id, OBJECT, 'ghactivity_event' ) ) ) {
 
 					// Store the number of commits attached to the event in post meta.
 					if ( 'PushEvent' == $event->type ) {
@@ -154,7 +154,7 @@ class GHActivity_Calls {
 						'post_content' => $post_content,
 					);
 					wp_insert_post( $event_args );
-					error_log( 'done' );
+
 				}
 			}
 
