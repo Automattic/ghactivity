@@ -126,21 +126,21 @@ class GHActivity_Calls {
 
 					// Store the number of commits attached to the event in post meta.
 					if ( 'PushEvent' == $event->type ) {
-						$meta = array( '_github_commits' => $event->payload->distinct_size );
+						$meta = array( '_github_commits' => absint( $event->payload->distinct_size ) );
 					} else {
 						$meta = false;
 					}
 
 					$taxonomies = array(
-						'ghactivity_event_type' => $this->get_event_type( $event->type, $event->payload->action ),
-						'ghactivity_repo' => $event->repo->name,
+						'ghactivity_event_type' => esc_html( $this->get_event_type( $event->type, $event->payload->action ) ),
+						'ghactivity_repo' => esc_html( $event->repo->name ),
 					);
 
 					// Build Post Content.
 					$post_content = sprintf(
 						/* translators: %1$s is an action taken, %2$s is a number of commits. */
 						__( '%1$s, including %2$s commits.', 'ghactivity' ),
-						$this->get_event_type( $event->type, $event->payload->action ),
+						esc_html( $this->get_event_type( $event->type, $event->payload->action ) ),
 						( $meta ? $meta['_github_commits'] : 'no' )
 					);
 
