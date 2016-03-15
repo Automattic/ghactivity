@@ -161,8 +161,13 @@ class GHActivity_Calls {
 						'meta_input'   => $meta,
 						'post_content' => $post_content,
 					);
-					wp_insert_post( $event_args );
-
+					$post_id = wp_insert_post( $event_args );
+					wp_set_object_terms(
+						$post_id, $taxonomies['ghactivity_event_type'], 'ghactivity_event_type', true
+					);
+					wp_set_object_terms(
+						$post_id, $taxonomies['ghactivity_repo'], 'ghactivity_repo', true
+					);
 				}
 			}
 
