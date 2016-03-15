@@ -5,6 +5,8 @@
  * @since 1.0
  */
 
+defined( 'ABSPATH' ) or die( 'No script kiddies please!' );
+
 /**
  * Register Custom Post Type
  *
