@@ -19,7 +19,7 @@ class GHActivity_Calls {
 	function __construct() {
 		add_action( 'ghactivity_publish', array( $this, 'publish_event' ) );
 		if ( ! wp_next_scheduled( 'ghactivity_publish' ) ) {
-			wp_schedule_event( time(), '1hour', 'ghactivity_publish' );
+			wp_schedule_event( time(), 'hourly', 'ghactivity_publish' );
 		}
 	}
 
