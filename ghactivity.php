@@ -31,6 +31,10 @@ class Jeherve_GHActivity {
 		add_action( 'plugins_loaded', array( $this, 'load_textdomain' ) );
 		// Load plugin
 		add_action( 'plugins_loaded', array( $this, 'load_plugin' ) );
+		// Flush rewrite rewrite_rules
+		add_action( 'add_option_github', array( $this, 'flush_rules_on_enable' ) );
+		add_action( 'update_option_github', array( $this, 'flush_rules_on_enable' ) );
+
 	}
 
 	public function load_textdomain() {
@@ -40,11 +44,16 @@ class Jeherve_GHActivity {
 	public function load_plugin() {
 		// Load core functions.
 		require_once( GHACTIVITY__PLUGIN_DIR . 'core.ghactivity.php' );
+		require_once( GHACTIVITY__PLUGIN_DIR . 'cpt.ghactivity.php' );
 
 		// Settings panel.
 		if ( is_admin() ) {
 			require_once( GHACTIVITY__PLUGIN_DIR . 'admin.ghactivity.php' );
 		}
+	}
+
+	public function flush_rules_on_enable() {
+		flush_rewrite_rules();
 	}
 }
 // And boom.
