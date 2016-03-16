@@ -173,5 +173,105 @@ class GHActivity_Calls {
 
 		}
 	}
+
+	/**
+	 * Count Posts per taxonomy.
+	 *
+	 * @since 1.1
+	 *
+	 * @param string $date_start Starting date range, using a strtotime compatible format.
+	 * @param string $date_end   End date range, using a strtotime compatible format.
+	 *
+	 * @return array $count Array of count of registered Events per term.
+	 */
+	public static function count_posts_per_term( $date_start, $date_end ) {
+		$count = array(
+			'comment'       => 0,
+			'issue-opened'  => 0,
+			'issue-closed'  => 0,
+			'issue-touched' => 0,
+			'reviewed-a-pr' => 0,
+			'did-something' => 0,
+		);
+
+		$args = array(
+			'post_type'      => 'ghactivity_event',
+			'post_status'    => 'publish',
+			'posts_per_page' => -1,  // Show all posts.
+			'date_query'     => array(
+				'after' => $date_start,
+				'before' => $date_end,
+				'inclusive' => true,
+			),
+		);
+
+		// Start a Query
+		$query = new WP_Query( $args );
+
+		while ( $query->have_posts() ) {
+			$query->the_post();
+
+			if ( has_term( 'comment', 'ghactivity_event_type', $query->post->ID ) ) {
+				$count['comment']++;
+			}
+			if ( has_term( 'issue-opened', 'ghactivity_event_type', $query->post->ID ) ) {
+				$count['issue-opened']++;
+			}
+			if ( has_term( 'issue-closed', 'ghactivity_event_type', $query->post->ID ) ) {
+				$count['issue-closed']++;
+			}
+			if ( has_term( 'issue-touched', 'ghactivity_event_type', $query->post->ID ) ) {
+				$count['issue-touched']++;
+			}
+			if ( has_term( 'reviewed-a-pr', 'ghactivity_event_type', $query->post->ID ) ) {
+				$count['reviewed-a-pr']++;
+			}
+			if ( has_term( 'did-something', 'ghactivity_event_type', $query->post->ID ) ) {
+				$count['did-something']++;
+			}
+		}
+		wp_reset_postdata();
+
+		return (array) $count;
+	}
+
+	/**
+	 * Count number of commits.
+	 *
+	 * @since 1.1
+	 *
+	 * @param string $date_start Starting date range, using a strtotime compatible format.
+	 * @param string $date_end   End date range, using a strtotime compatible format.
+	 *
+	 * @return int $count Number of commits during that time period.
+	 */
+	public static function count_commits( $date_start, $date_end ) {
+		$count = 0;
+
+		$args = array(
+			'post_type'      => 'ghactivity_event',
+			'post_status'    => 'publish',
+			'posts_per_page' => -1,  // Show all posts.
+			'meta_key'       => '_github_commits',
+			'date_query'     => array(
+				'after' => $date_start,
+				'before' => $date_end,
+				'inclusive' => true,
+			),
+		);
+
+		// Start a Query
+		$query = new WP_Query( $args );
+
+		while ( $query->have_posts() ) {
+			$query->the_post();
+
+			$count = $count + get_post_meta( $query->post->ID, '_github_commits', true );
+
+		}
+		wp_reset_postdata();
+
+		return (int) $count;
+	}
 }
 new GHActivity_Calls();

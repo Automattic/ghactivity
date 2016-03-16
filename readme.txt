@@ -1,7 +1,7 @@
 === GHActivity ===
 Contributors: jeherve
 Tags: GitHub, Tracking, Productivity,
-Stable tag: 1.0
+Stable tag: 1.1
 Requires at least: 4.4.2
 Tested up to: 4.4.2
 
@@ -23,6 +23,9 @@ If you find bugs, you can report them [here](http://wordpress.org/support/plugin
 == Frequently Asked Questions ==
 
 == Changelog ==
+
+= 1.1 =
+* Add basic reporting in the plugin settings screen.
 
 = 1.0.0 =
 * Initial release.
