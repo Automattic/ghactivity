@@ -97,7 +97,6 @@ class GHActivity_Calls {
 			} else {
 				$event_type = __( 'PR touched', 'ghactivity' );
 			}
-		}
 		} elseif ( 'IssueCommentEvent' == $event_type ) {
 			$event_type = __( 'Comment', 'ghactivity' );
 		} elseif ( 'PullRequestReviewCommentEvent' == $event_type ) {
