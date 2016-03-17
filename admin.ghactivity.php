@@ -252,7 +252,7 @@ function ghactivity_do_settings() {
 			$action_count['deleted-a-branch'],
 			$action_count['pr-opened'],
 			$action_count['pr-closed'],
-			$action_count['pr-touched'],
+			$action_count['pr-touched']
 		);
 		endif;
 		?>
