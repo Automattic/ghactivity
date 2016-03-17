@@ -32,8 +32,8 @@ class Jeherve_GHActivity {
 		// Load plugin
 		add_action( 'plugins_loaded', array( $this, 'load_plugin' ) );
 		// Flush rewrite rewrite_rules
-		add_action( 'add_option_github', array( $this, 'flush_rules_on_enable' ) );
-		add_action( 'update_option_github', array( $this, 'flush_rules_on_enable' ) );
+		add_action( 'add_option_ghactivity_event', array( $this, 'flush_rules_on_enable' ) );
+		add_action( 'update_option_ghactivity_event', array( $this, 'flush_rules_on_enable' ) );
 
 	}
 
