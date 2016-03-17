@@ -236,6 +236,9 @@ function ghactivity_do_settings() {
 				<li>%4$s issues edited</li>
 				<li>%5$s commits</li>
 				<li>%6$s PR Reviews</li>
+				<li>%9$s PR created</li>
+				<li>%10$s PR closed</li>
+				<li>%11$s PR edited</li>
 				<li>%8$s branches deleted</li>
 				<li>%7$s Other</li>
 			</ul>',
@@ -247,6 +250,9 @@ function ghactivity_do_settings() {
 			$action_count['reviewed-a-pr'],
 			$action_count['did-something'],
 			$action_count['deleted-a-branch'],
+			$action_count['pr-opened'],
+			$action_count['pr-closed'],
+			$action_count['pr-touched'],
 		);
 		endif;
 		?>

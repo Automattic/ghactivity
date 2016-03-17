@@ -89,6 +89,15 @@ class GHActivity_Calls {
 			} else {
 				$event_type = __( 'Issue touched', 'ghactivity' );
 			}
+		} elseif ( 'PullRequestEvent' == $event_type ) {
+			if ( 'closed' == $action ) {
+				$event_type = __( 'PR Closed', 'ghactivity' );
+			} elseif ( 'created' == $action ) {
+				$event_type = __( 'PR Opened', 'ghactivity' );
+			} else {
+				$event_type = __( 'PR touched', 'ghactivity' );
+			}
+		}
 		} elseif ( 'IssueCommentEvent' == $event_type ) {
 			$event_type = __( 'Comment', 'ghactivity' );
 		} elseif ( 'PullRequestReviewCommentEvent' == $event_type ) {
@@ -194,6 +203,9 @@ class GHActivity_Calls {
 			'issue-touched'    => 0,
 			'reviewed-a-pr'    => 0,
 			'deleted-a-branch' => 0,
+			'pr-opened'        => 0,
+			'pr-closed'        => 0,
+			'pr-touched'       => 0,
 			'did-something'    => 0,
 		);
 
@@ -231,6 +243,15 @@ class GHActivity_Calls {
 			}
 			if ( has_term( 'deleted-a-branch', 'ghactivity_event_type', $query->post->ID ) ) {
 				$count['deleted-a-branch']++;
+			}
+			if ( has_term( 'pr-opened', 'ghactivity_event_type', $query->post->ID ) ) {
+				$count['pr-opened']++;
+			}
+			if ( has_term( 'pr-closed', 'ghactivity_event_type', $query->post->ID ) ) {
+				$count['pr-closed']++;
+			}
+			if ( has_term( 'pr-touched', 'ghactivity_event_type', $query->post->ID ) ) {
+				$count['pr-touched']++;
 			}
 			if ( has_term( 'did-something', 'ghactivity_event_type', $query->post->ID ) ) {
 				$count['did-something']++;
