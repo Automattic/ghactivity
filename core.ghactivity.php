@@ -84,7 +84,7 @@ class GHActivity_Calls {
 		if ( 'IssuesEvent' == $event_type ) {
 			if ( 'closed' == $action ) {
 				$event_type = __( 'Issue Closed', 'ghactivity' );
-			} elseif ( 'created' == $action ) {
+			} elseif ( 'opened' == $action ) {
 				$event_type = __( 'Issue Opened', 'ghactivity' );
 			} else {
 				$event_type = __( 'Issue touched', 'ghactivity' );
