@@ -92,7 +92,7 @@ class GHActivity_Calls {
 		} elseif ( 'PullRequestEvent' == $event_type ) {
 			if ( 'closed' == $action ) {
 				$event_type = __( 'PR Closed', 'ghactivity' );
-			} elseif ( 'created' == $action ) {
+			} elseif ( 'opened' == $action ) {
 				$event_type = __( 'PR Opened', 'ghactivity' );
 			} else {
 				$event_type = __( 'PR touched', 'ghactivity' );
