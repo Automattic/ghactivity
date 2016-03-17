@@ -99,6 +99,8 @@ class GHActivity_Calls {
 			$event_type = __( 'Created a tag', 'ghactivity' );
 		} elseif ( 'ReleaseEvent' == $event_type ) {
 			$event_type = __( 'Created a release', 'ghactivity' );
+		} elseif ( 'DeleteEvent' == $event_type ) {
+			$event_type = __( 'Deleted a branch');
 		} else {
 			$event_type = __( 'Did something', 'ghactivity' );
 		}
@@ -186,12 +188,13 @@ class GHActivity_Calls {
 	 */
 	public static function count_posts_per_term( $date_start, $date_end ) {
 		$count = array(
-			'comment'       => 0,
-			'issue-opened'  => 0,
-			'issue-closed'  => 0,
-			'issue-touched' => 0,
-			'reviewed-a-pr' => 0,
-			'did-something' => 0,
+			'comment'          => 0,
+			'issue-opened'     => 0,
+			'issue-closed'     => 0,
+			'issue-touched'    => 0,
+			'reviewed-a-pr'    => 0,
+			'deleted-a-branch' => 0,
+			'did-something'    => 0,
 		);
 
 		$args = array(
@@ -225,6 +228,9 @@ class GHActivity_Calls {
 			}
 			if ( has_term( 'reviewed-a-pr', 'ghactivity_event_type', $query->post->ID ) ) {
 				$count['reviewed-a-pr']++;
+			}
+			if ( has_term( 'deleted-a-branch', 'ghactivity_event_type', $query->post->ID ) ) {
+				$count['deleted-a-branch']++;
 			}
 			if ( has_term( 'did-something', 'ghactivity_event_type', $query->post->ID ) ) {
 				$count['did-something']++;
