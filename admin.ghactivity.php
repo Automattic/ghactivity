@@ -68,16 +68,9 @@ function ghactivity_options_init() {
 		'ghactivity_app_settings'
 	);
 	add_settings_field(
-		'client_id',
-		__( 'Client ID', 'ghactivity' ),
-		'ghactivity_app_settings_id_callback',
-		'ghactivity',
-		'ghactivity_app_settings'
-	);
-	add_settings_field(
-		'client_secret',
-		__( 'Client Secret', 'ghactivity' ),
-		'ghactivity_app_settings_secret_callback',
+		'access_token',
+		__( 'Personal Access Token', 'ghactivity' ),
+		'ghactivity_app_settings_token_callback',
 		'ghactivity',
 		'ghactivity_app_settings'
 	);
@@ -114,11 +107,11 @@ add_action( 'admin_init', 'ghactivity_options_init' );
 function ghactivity_app_settings_callback() {
 	echo '<p>';
 	printf(
-		__( 'To use the plugin, you will need to register an app on GitHub first. <a href="%1$s">click here</a> to register an app. You can use any page on your site as "Authorization callback URL".', 'ghactivity' ),
-		esc_url( 'https://github.com/settings/applications/new' )
+		__( 'To use the plugin, you will need to create a new personal access token on GitHub first. <a href="%1$s">click here</a> to create a token. You only need to check the first "repo" checkbox.', 'ghactivity' ),
+		esc_url( 'https://github.com/settings/tokens/new' )
 	);
 	echo '<br/>';
-	_e( 'Once you created your app, copy the "Client ID" and "Client Secret" values below. You will also want to enter your GitHub username.', 'ghactivity' );
+	_e( 'Once you created your app, copy the access token value below. You will also want to enter your GitHub username.', 'ghactivity' );
 	echo '</p>';
 }
 
@@ -127,30 +120,21 @@ function ghactivity_app_settings_callback() {
  *
  * @since 1.0
  */
-// Client ID option.
-function ghactivity_app_settings_id_callback() {
-	$options = (array) get_option( 'ghactivity' );
-	printf(
-		'<input type="text" name="ghactivity[client_id]" value="%s" class="regular-text" />',
-		isset( $options['client_id'] ) ? esc_attr( $options['client_id'] ) : ''
-	);
-}
-
-// Client Secret option.
-function ghactivity_app_settings_secret_callback() {
-	$options = (array) get_option( 'ghactivity' );
-	printf(
-		'<input type="text" name="ghactivity[client_secret]" value="%s" class="regular-text" />',
-		isset( $options['client_secret'] ) ? esc_attr( $options['client_secret'] ) : ''
-	);
-}
-
-// GitHub Username option.
+ // GitHub Username option.
 function ghactivity_app_settings_username_callback() {
 	$options = (array) get_option( 'ghactivity' );
 	printf(
 		'<input type="text" name="ghactivity[username]" value="%s" />',
 		isset( $options['username'] ) ? esc_attr( $options['username'] ) : ''
+	);
+}
+
+// Access Token option.
+function ghactivity_app_settings_token_callback() {
+	$options = (array) get_option( 'ghactivity' );
+	printf(
+		'<input type="text" name="ghactivity[access_token]" value="%s" class="regular-text" />',
+		isset( $options['access_token'] ) ? esc_attr( $options['access_token'] ) : ''
 	);
 }
 
@@ -185,6 +169,23 @@ function ghactivity_date_end_callback() {
 		'<input type="text" name="ghactivity[date_end]" value="%s" class="report-date" />',
 		isset( $options['date_end'] ) ? esc_attr( $options['date_end'] ) : date( 'Y-m-d', strtotime( '-1 day' ) )
 	);
+}
+
+/**
+ * Sanitize and validate input.
+ *
+ * @since 1.0
+ *
+ * @param  array $input Saved options.
+ * @return array $input Sanitized options.
+ */
+function ghactivity_settings_validate( $input ) {
+	$input['username']      = sanitize_user( $input['username'] );
+	$input['client_id']     = sanitize_key( $input['access_token'] );
+	$input['date_start']    = sanitize_text_field( $input['date_start'] );
+	$input['date_end']      = sanitize_text_field( $input['date_end'] );
+
+	return $input;
 }
 
 /**
@@ -258,22 +259,4 @@ function ghactivity_do_settings() {
 		?>
 	</div><!-- .wrap -->
 	<?php
-}
-
-/**
- * Sanitize and validate input.
- *
- * @since 1.0
- *
- * @param  array $input Saved options.
- * @return array $input Sanitized options.
- */
-function ghactivity_settings_validate( $input ) {
-	$input['username']      = sanitize_user( $input['username'] );
-	$input['client_id']     = sanitize_key( $input['client_id'] );
-	$input['client_secret'] = sanitize_key( $input['client_secret'] );
-	$input['date_start']    = sanitize_text_field( $input['date_start'] );
-	$input['date_end']      = sanitize_text_field( $input['date_end'] );
-
-	return $input;
 }

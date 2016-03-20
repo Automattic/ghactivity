@@ -48,10 +48,9 @@ class GHActivity_Calls {
 	private function get_github_activity() {
 
 		$query_url = sprintf(
-			'https://api.github.com/users/%1$s/events?client_id=%2$s&client_secret=%3$s',
+			'https://api.github.com/users/%1$s/events?access_token=%2$s',
 			$this->get_option( 'username' ),
-			$this->get_option( 'client_id' ),
-			$this->get_option( 'client_secret' )
+			$this->get_option( 'access_token' )
 		);
 		$data = wp_remote_get( esc_url_raw( $query_url ) );
 
