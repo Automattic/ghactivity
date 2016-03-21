@@ -24,6 +24,10 @@ class GHActivity_Charts {
 	function enqueue_scripts( $hook ) {
 		global $ghactivity_settings_page;
 
+		if ( is_admin() && $ghactivity_settings_page != $hook ) {
+			return;
+		}
+
 		// General Chart.js minified source.
 		wp_register_script( 'ghactivity-chartjs', plugins_url( 'js/chartjs.js' , __FILE__ ), array( 'jquery' ), GHACTIVITY__VERSION );
 
@@ -54,11 +58,6 @@ class GHActivity_Charts {
 		wp_localize_script( 'ghactivity-chartdata', 'chart_options', $chart_options );
 
 		wp_register_style( 'ghactivity-reports-charts', plugins_url( 'css/charts.css' , __FILE__ ), array(), GHACTIVITY__VERSION );
-
-
-		if ( is_admin() && $ghactivity_settings_page != $hook ) {
-			return;
-		}
 
 		if ( ! empty( $chart_data ) ) {
 			wp_enqueue_script( 'ghactivity-chartjs' );
