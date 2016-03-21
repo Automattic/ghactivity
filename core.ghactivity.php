@@ -30,12 +30,16 @@ class GHActivity_Calls {
 	 *
 	 * @param string $name Option name.
 	 *
-	 * @return Specific option
+	 * @return string $str Specific option.
 	 */
 	private function get_option( $name ) {
 		$options = get_option( 'ghactivity' );
 
-		return $options[ $name ];
+		if ( isset( $options[ $name ] ) ) {
+			return $options[ $name ];
+		} else {
+			return '';
+		}
 	}
 
 	/**
@@ -68,16 +72,16 @@ class GHActivity_Calls {
 	}
 
 	/**
-	 * Get an event name to use as a taxonomy, and in the post content.
+	 * Get an event type to use as a taxonomy, and in the post content.
 	 *
 	 * Starts from data collected with GitHub API, and displays a nice event type instead.
 	 *
 	 * @since 1.0
 	 *
-	 * @param string $event_type Event name returned by GitHub API.
+	 * @param string $event_type Event type returned by GitHub API.
 	 * @param string $action Action taken during event, as returned by GitHub API.
 	 *
-	 * @return string $event_type Event name displayed in event_type taxonomy.
+	 * @return string $event_type Event type displayed in event_type taxonomy.
 	 */
 	private function get_event_type( $event_type, $action ) {
 		if ( 'IssuesEvent' == $event_type ) {
@@ -184,16 +188,16 @@ class GHActivity_Calls {
 	}
 
 	/**
-	 * Count Posts per taxonomy.
+	 * Count Posts per event type.
 	 *
 	 * @since 1.1
 	 *
 	 * @param string $date_start Starting date range, using a strtotime compatible format.
 	 * @param string $date_end   End date range, using a strtotime compatible format.
 	 *
-	 * @return array $count Array of count of registered Events per term.
+	 * @return array $count Array of count of registered Event types.
 	 */
-	public static function count_posts_per_term( $date_start, $date_end ) {
+	public static function count_posts_per_event_type( $date_start, $date_end ) {
 		$count = array(
 			'comment'          => 0,
 			'issue-opened'     => 0,
@@ -217,6 +221,14 @@ class GHActivity_Calls {
 				'inclusive' => true,
 			),
 		);
+		/**
+		 * Filter WP Query arguments used to count Posts per event type.
+		 *
+		 * @since 1.2
+		 *
+		 * @param array $args Array of WP Query arguments.
+		 */
+		$args = apply_filters( 'ghactivity_count_posts_event_type_query_args', $args );
 
 		// Start a Query
 		$query = new WP_Query( $args );
@@ -284,6 +296,14 @@ class GHActivity_Calls {
 				'inclusive' => true,
 			),
 		);
+		/**
+		 * Filter WP Query arguments used to count the number of commits in a specific date range.
+		 *
+		 * @since 1.2
+		 *
+		 * @param array $args Array of WP Query arguments.
+		 */
+		$args = apply_filters( 'ghactivity_count_commits_query_args', $args );
 
 		// Start a Query
 		$query = new WP_Query( $args );

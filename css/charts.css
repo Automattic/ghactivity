@@ -1,0 +1,11 @@
+#ghactivity_settings #canvas-holder {
+	float: left;
+	width:30%;
+}
+
+#ghactivity_admin_report {
+	float: left;
+	list-style-type: circle;
+	padding: 1em 2em;
+	width: 30%;
+}

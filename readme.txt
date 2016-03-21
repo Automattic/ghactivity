@@ -1,7 +1,7 @@
 === GHActivity ===
 Contributors: jeherve
 Tags: GitHub, Tracking, Productivity,
-Stable tag: 1.1
+Stable tag: 1.2
 Requires at least: 4.4.2
 Tested up to: 4.4.2
 
@@ -23,6 +23,11 @@ If you find bugs, you can report them [here](http://wordpress.org/support/plugin
 == Frequently Asked Questions ==
 
 == Changelog ==
+
+= 1.2 =
+* Change authentication method. Use personal tokens instead, so the plugin can capture activity in private repos. **You will need to configure the plugin again.**
+* Introduce Charts to display the main report in the settings screen.
+* Refactor to prepare for other ways to display the reports.
 
 = 1.1 =
 * Add basic reporting in the plugin settings screen.

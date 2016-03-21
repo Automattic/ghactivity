@@ -27,7 +27,7 @@ add_action( 'admin_menu', 'ghactivity_menu' );
  *
  * @since 1.1
  */
-function ghactivity_enqueue_scripts( $hook ) {
+function ghactivity_enqueue_admin_scripts( $hook ) {
 
 	global $ghactivity_settings_page;
 
@@ -46,7 +46,7 @@ function ghactivity_enqueue_scripts( $hook ) {
 	wp_enqueue_script( 'ghactivity-reports' );
 	wp_enqueue_style( 'ghactivity-reports-datepicker' );
 }
-add_action( 'admin_enqueue_scripts', 'ghactivity_enqueue_scripts' );
+add_action( 'admin_enqueue_scripts', 'ghactivity_enqueue_admin_scripts' );
 /**
  * Create new option.
  */
@@ -195,67 +195,36 @@ function ghactivity_settings_validate( $input ) {
  */
 function ghactivity_do_settings() {
 	?>
-	<div class="wrap">
+	<div id="ghactivity_settings" class="wrap">
 		<h1><?php _e( 'GitHub Activity Settings', 'ghactivity' ); ?></h1>
 			<form method="post" action="options.php">
 				<?php
 					settings_fields( 'ghactivity_settings' );
+					/**
+					 * Fires at the top of the Settings page.
+					 *
+					 * @since 1.2
+					 */
+					do_action( 'ghactivity_start_settings' );
 					do_settings_sections( 'ghactivity' );
-					submit_button();
 					do_settings_sections( 'ghactivity_reports' );
+					submit_button();
+					/**
+					 * Fires at the bottom of the Settings page.
+					 *
+					 * @since 1.2
+					 */
+					do_action( 'ghactivity_end_settings' );
 				?>
 			</form>
 
 		<?php
-
-		$options = (array) get_option( 'ghactivity' );
-		if ( isset( $options['date_start'], $options['date_end'] ) ) :
-
-		printf(
-			'<h2>%s</h2>',
-			__( 'Reports', 'ghactivity' )
-		);
-
-		// Number of commits during that period.
-		$commit_count = (int) GHActivity_Calls::count_commits( $options['date_start'], $options['date_end'] );
-
-		// Action count during that period.
-		$action_count = GHActivity_Calls::count_posts_per_term( $options['date_start'], $options['date_end'] );
-
-		printf(
-			__( '<p>From %1$s until %2$s:</p>', 'ghactivity' ),
-			date_i18n( get_option( 'date_format' ), strtotime( $options['date_start'] ) ),
-			date_i18n( get_option( 'date_format' ), strtotime( $options['date_end'] ) )
-		);
-
-		// Count of each action during that period.
-		printf(
-			'<ul>
-				<li>%1$s comments</li>
-				<li>%2$s issues created</li>
-				<li>%3$s issues closed</li>
-				<li>%4$s issues edited</li>
-				<li>%5$s commits</li>
-				<li>%6$s PR Reviews</li>
-				<li>%9$s PR created</li>
-				<li>%10$s PR closed</li>
-				<li>%11$s PR edited</li>
-				<li>%8$s branches deleted</li>
-				<li>%7$s Other</li>
-			</ul>',
-			$action_count['comment'],
-			$action_count['issue-opened'],
-			$action_count['issue-closed'],
-			$action_count['issue-touched'],
-			$commit_count,
-			$action_count['reviewed-a-pr'],
-			$action_count['did-something'],
-			$action_count['deleted-a-branch'],
-			$action_count['pr-opened'],
-			$action_count['pr-closed'],
-			$action_count['pr-touched']
-		);
-		endif;
+		/**
+		 * Fires at the bottom of the Settings page, after the form.
+		 *
+		 * @since 1.2
+		 */
+		do_action( 'ghactivity_after_settings' );
 		?>
 	</div><!-- .wrap -->
 	<?php
