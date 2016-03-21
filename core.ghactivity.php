@@ -268,6 +268,18 @@ class GHActivity_Calls {
 			if ( has_term( 'did-something', 'ghactivity_event_type', $query->post->ID ) ) {
 				$count['did-something']++;
 			}
+
+			/**
+			 * Filter the final array of event types and matching counts after calculation.
+			 *
+			 * Allows one to add their own a action, matching a specific term or Query element.
+			 *
+			 * @since 1.3
+			 *
+			 * @param array $count Array of count of registered Event types.
+			 */
+			$count = apply_filters( 'ghactivity_count_posts_event_type_counts', $count, $query );
+
 		}
 		wp_reset_postdata();
 
