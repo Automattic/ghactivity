@@ -75,6 +75,7 @@ class GHActivity_Calls {
 	 * Get an event type to use as a taxonomy, and in the post content.
 	 *
 	 * Starts from data collected with GitHub API, and displays a nice event type instead.
+	 * @see https://developer.github.com/v3/activity/events/types/
 	 *
 	 * @since 1.0
 	 *
