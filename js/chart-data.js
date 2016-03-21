@@ -18,7 +18,7 @@ window.onload = function() {
 // Create a legend to display along the charts, using the same data.
 jQuery(document).ready(function() {
 	jQuery.each(doughnutData, function(key, val) {
-		var $li = jQuery( "<li>" + val.label + ": " + val.value + "</li>" );
+		var $li = jQuery( '<li>' + val.label + ': ' + val.value + '<span class="chart-color" style="background-color:' + val.color + ';"></span></li>' );
 		jQuery("#ghactivity_admin_report").append($li);
 	});
 });
