@@ -82,42 +82,54 @@ class GHActivity_Calls {
 	 * @param string $event_type Event type returned by GitHub API.
 	 * @param string $action Action taken during event, as returned by GitHub API.
 	 *
-	 * @return string $event_type Event type displayed in event_type taxonomy.
+	 * @return string $ghactivity_event_type Event type displayed in ghactivity_event_type taxonomy.
 	 */
 	private function get_event_type( $event_type, $action ) {
 		if ( 'IssuesEvent' == $event_type ) {
 			if ( 'closed' == $action ) {
-				$event_type = __( 'Issue Closed', 'ghactivity' );
+				$ghactivity_event_type = __( 'Issue Closed', 'ghactivity' );
 			} elseif ( 'opened' == $action ) {
-				$event_type = __( 'Issue Opened', 'ghactivity' );
+				$ghactivity_event_type = __( 'Issue Opened', 'ghactivity' );
 			} else {
-				$event_type = __( 'Issue touched', 'ghactivity' );
+				$ghactivity_event_type = __( 'Issue touched', 'ghactivity' );
 			}
 		} elseif ( 'PullRequestEvent' == $event_type ) {
 			if ( 'closed' == $action ) {
-				$event_type = __( 'PR Closed', 'ghactivity' );
+				$ghactivity_event_type = __( 'PR Closed', 'ghactivity' );
 			} elseif ( 'opened' == $action ) {
-				$event_type = __( 'PR Opened', 'ghactivity' );
+				$ghactivity_event_type = __( 'PR Opened', 'ghactivity' );
 			} else {
-				$event_type = __( 'PR touched', 'ghactivity' );
+				$ghactivity_event_type = __( 'PR touched', 'ghactivity' );
 			}
 		} elseif ( 'IssueCommentEvent' == $event_type ) {
-			$event_type = __( 'Comment', 'ghactivity' );
+			$ghactivity_event_type = __( 'Comment', 'ghactivity' );
 		} elseif ( 'PullRequestReviewCommentEvent' == $event_type ) {
-			$event_type = __( 'Reviewed a PR', 'ghactivity' );
+			$ghactivity_event_type = __( 'Reviewed a PR', 'ghactivity' );
 		} elseif ( 'PushEvent' == $event_type ) {
-			$event_type = __( 'Pushed a branch', 'ghactivity' );
+			$ghactivity_event_type = __( 'Pushed a branch', 'ghactivity' );
 		} elseif ( 'CreateEvent' == $event_type ) {
-			$event_type = __( 'Created a tag', 'ghactivity' );
+			$ghactivity_event_type = __( 'Created a tag', 'ghactivity' );
 		} elseif ( 'ReleaseEvent' == $event_type ) {
-			$event_type = __( 'Created a release', 'ghactivity' );
+			$ghactivity_event_type = __( 'Created a release', 'ghactivity' );
 		} elseif ( 'DeleteEvent' == $event_type ) {
-			$event_type = __( 'Deleted a branch');
+			$ghactivity_event_type = __( 'Deleted a branch');
 		} else {
-			$event_type = __( 'Did something', 'ghactivity' );
+			$ghactivity_event_type = __( 'Did something', 'ghactivity' );
 		}
 
-		return $event_type;
+		/**
+		 * Filter Event Type creation.
+		 *
+		 * Allows you to define your own Event types.
+		 *
+		 * @since 1.3
+		 *
+		 * @param string $event_type Event type returned by GitHub API.
+		 * @param string $action Action taken during event, as returned by GitHub API.
+		 */
+		$ghactivity_event_type = apply_filters( 'ghactivity_event_type', $event_type, $action );
+
+		return $ghactivity_event_type;
 	}
 
 	/**
