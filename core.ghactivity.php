@@ -238,35 +238,16 @@ class GHActivity_Calls {
 		while ( $query->have_posts() ) {
 			$query->the_post();
 
-			if ( has_term( 'comment', 'ghactivity_event_type', $query->post->ID ) ) {
-				$count['comment']++;
-			}
-			if ( has_term( 'issue-opened', 'ghactivity_event_type', $query->post->ID ) ) {
-				$count['issue-opened']++;
-			}
-			if ( has_term( 'issue-closed', 'ghactivity_event_type', $query->post->ID ) ) {
-				$count['issue-closed']++;
-			}
-			if ( has_term( 'issue-touched', 'ghactivity_event_type', $query->post->ID ) ) {
-				$count['issue-touched']++;
-			}
-			if ( has_term( 'reviewed-a-pr', 'ghactivity_event_type', $query->post->ID ) ) {
-				$count['reviewed-a-pr']++;
-			}
-			if ( has_term( 'deleted-a-branch', 'ghactivity_event_type', $query->post->ID ) ) {
-				$count['deleted-a-branch']++;
-			}
-			if ( has_term( 'pr-opened', 'ghactivity_event_type', $query->post->ID ) ) {
-				$count['pr-opened']++;
-			}
-			if ( has_term( 'pr-closed', 'ghactivity_event_type', $query->post->ID ) ) {
-				$count['pr-closed']++;
-			}
-			if ( has_term( 'pr-touched', 'ghactivity_event_type', $query->post->ID ) ) {
-				$count['pr-touched']++;
-			}
-			if ( has_term( 'did-something', 'ghactivity_event_type', $query->post->ID ) ) {
-				$count['did-something']++;
+			$terms = get_the_terms( $query->post->ID, 'ghactivity_event_type' );
+
+			if ( $terms && ! is_wp_error( $terms ) ) {
+				foreach ( $terms as $term ) {
+					if ( isset( $count[ $term->slug ] ) ) {
+						$count[ $term->slug ]++;
+					} else {
+						$count[ $term->slug ] = 1;
+					}
+				}
 			}
 
 			/**
