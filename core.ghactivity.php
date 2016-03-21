@@ -211,18 +211,7 @@ class GHActivity_Calls {
 	 * @return array $count Array of count of registered Event types.
 	 */
 	public static function count_posts_per_event_type( $date_start, $date_end ) {
-		$count = array(
-			'comment'          => 0,
-			'issue-opened'     => 0,
-			'issue-closed'     => 0,
-			'issue-touched'    => 0,
-			'reviewed-a-pr'    => 0,
-			'deleted-a-branch' => 0,
-			'pr-opened'        => 0,
-			'pr-closed'        => 0,
-			'pr-touched'       => 0,
-			'did-something'    => 0,
-		);
+		$count = array();
 
 		$args = array(
 			'post_type'      => 'ghactivity_event',
