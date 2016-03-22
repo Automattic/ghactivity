@@ -147,6 +147,14 @@ class GHActivity_Calls {
 		if ( isset( $github_events ) && is_array( $github_events ) ) {
 
 			foreach( $github_events as $event ) {
+				// Let's not keep private events if you don't want to save them.
+				if (
+					false == $event->public
+					&& true != $this->get_option( 'display_private' )
+				) {
+					continue;
+				}
+
 				// If no post exists with that ID, let's go on and publish a post.
 				if ( is_null( get_page_by_title( $event->id, OBJECT, 'ghactivity_event' ) ) ) {
 

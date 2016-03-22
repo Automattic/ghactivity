@@ -74,6 +74,13 @@ function ghactivity_options_init() {
 		'ghactivity',
 		'ghactivity_app_settings'
 	);
+	add_settings_field(
+		'display_private',
+		__( 'Do you want to store information about private repositories?', 'ghactivity' ),
+		'ghactivity_app_settings_privacy_callback',
+		'ghactivity',
+		'ghactivity_app_settings'
+	);
 
 	// Reports Section
 	add_settings_section(
@@ -138,6 +145,15 @@ function ghactivity_app_settings_token_callback() {
 	);
 }
 
+// Do you want to store information from private repositories as well?
+function ghactivity_app_settings_privacy_callback() {
+	$options = (array) get_option( 'ghactivity' );
+	printf(
+		'<input type="checkbox" name="ghactivity[display_private]" value="1" %s />',
+		checked( true, (bool) ( isset( $options['display_private'] ) ? $options['display_private'] : false ), false )
+	);
+}
+
 /**
  * GitHub Activity Reports section.
  *
@@ -180,10 +196,11 @@ function ghactivity_date_end_callback() {
  * @return array $input Sanitized options.
  */
 function ghactivity_settings_validate( $input ) {
-	$input['username']      = sanitize_user( $input['username'] );
-	$input['client_id']     = sanitize_key( $input['access_token'] );
-	$input['date_start']    = sanitize_text_field( $input['date_start'] );
-	$input['date_end']      = sanitize_text_field( $input['date_end'] );
+	$input['username']        = sanitize_user( $input['username'] );
+	$input['client_id']       = sanitize_key( $input['access_token'] );
+	$input['display_private'] = (bool) $input['display_private'];
+	$input['date_start']      = sanitize_text_field( $input['date_start'] );
+	$input['date_end']        = sanitize_text_field( $input['date_end'] );
 
 	return $input;
 }
