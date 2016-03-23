@@ -3,7 +3,7 @@
  * Plugin Name: GHActivity
  * Plugin URI: http://jeremy.hu
  * Description: Build reports of all your GitHub activity.
- * Version: 1.2.1
+ * Version: 1.3
  * Author: Jeremy Herve
  * Author URI: http://jeremy.hu
  * Text Domain: ghactivity
@@ -13,7 +13,7 @@
 
 defined( 'ABSPATH' ) or die( 'No script kiddies please!' );
 
-define( 'GHACTIVITY__VERSION',     '1.2.1' );
+define( 'GHACTIVITY__VERSION',     '1.3' );
 define( 'GHACTIVITY__PLUGIN_DIR',  plugin_dir_path( __FILE__ ) );
 
 class Jeherve_GHActivity {

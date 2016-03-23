@@ -1,7 +1,7 @@
 === GHActivity ===
 Contributors: jeherve
 Tags: GitHub, Tracking, Productivity,
-Stable tag: 1.2.1
+Stable tag: 1.3
 Requires at least: 4.4.2
 Tested up to: 4.4.2
 
@@ -23,6 +23,10 @@ If you find bugs, you can report them [here](http://wordpress.org/support/plugin
 == Frequently Asked Questions ==
 
 == Changelog ==
+
+= 1.3 =
+* Add new option for those who do not want to store info from private repos.
+* Add New GitHub Activity Widget, and new `[ghactivity]` shortcode, to display reports on the frontend.
 
 = 1.2.1 =
 * Make sure the chart data isn't added anywhere but where necessary
