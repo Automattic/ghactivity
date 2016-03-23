@@ -15,6 +15,9 @@ defined( 'ABSPATH' ) or die( 'No script kiddies please!' );
 class GHActivity_Reports {
 
 	function __construct() {
+		// Add doughnut chart to widget.
+		add_action( 'ghactivity_widget_output', array( 'GHActivity_Charts', 'print_doughnut' ) );
+
 		// Add Doughtnut chart to Settings page.
 		add_action( 'ghactivity_after_settings', array( $this, 'admin_report_markup' ) );
 		add_action( 'ghactivity_after_settings', array( 'GHActivity_Charts', 'print_doughnut' ) );

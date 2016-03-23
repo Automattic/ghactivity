@@ -15,6 +15,7 @@ defined( 'ABSPATH' ) or die( 'No script kiddies please!' );
  * @since 1.2
  */
 class GHActivity_Charts {
+	protected $_found_shortcode = false;
 
 	function __construct() {
 		add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_scripts' ) );
@@ -24,7 +25,34 @@ class GHActivity_Charts {
 	function enqueue_scripts( $hook ) {
 		global $ghactivity_settings_page;
 
+		// Decide where scripts are enqueued in admin
 		if ( is_admin() && $ghactivity_settings_page != $hook ) {
+			return;
+		}
+
+		/**
+		 * Decide if the scripts should be enqueued in the frontend.
+		 *
+		 * We'll check for a widget and for a shortcode.
+		 */
+
+		// Look for the ghactivity shortcode.
+		if ( empty( $GLOBALS['posts'] ) || ! is_array( $GLOBALS['posts'] ) ) {
+			return;
+		}
+		foreach ( $GLOBALS['posts'] as $p ) {
+			if ( has_shortcode( $p->post_content, 'ghactivity' ) ) {
+				$this->_found_shortcode = true;
+				break;
+			}
+		}
+
+		// Return if no widget or shortcode can be found.
+		if (
+			! is_admin()
+			&& ! is_active_widget( 'GHActivity_Widget', false, 'ghactivity_widget' )
+			&& ! $this->_found_shortcode
+		) {
 			return;
 		}
 
