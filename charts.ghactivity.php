@@ -83,11 +83,21 @@ class GHActivity_Charts {
 		 */
 		$dims = (array) apply_filters( 'ghactivity_chart_dimensions', array( '300', '300' ) );
 
+		/**
+		 * Filter the Widget ID
+		 *
+		 * @since 1.3.1
+		 *
+		 * @param string $widget_id Unique Widget ID. Default to 'admin'.
+		 */
+		$widget_id = apply_filters( 'ghactivity_widget_id', 'admin' );
+
 		wp_register_script( 'ghactivity-chartdata', plugins_url( 'js/chart-data.js' , __FILE__ ), array( 'jquery', 'ghactivity-chartjs' ), GHACTIVITY__VERSION );
 		$chart_options = array(
 			'doughtnut_data' => $chart_data,
 			'width'          => absint( $dims[0] ),
 			'height'         => absint( $dims[1] ),
+			'doughnut_id'    => $widget_id,
 		);
 		wp_localize_script( 'ghactivity-chartdata', 'chart_options', $chart_options );
 
@@ -105,12 +115,19 @@ class GHActivity_Charts {
 	 *
 	 * @since 1.2
 	 *
+	 * @param int $widget_id Widget ID.
+	 *
 	 * @echo string $chart Doughnut chart markup.
 	 */
-	public static function print_doughnut() {
-		echo '<div id="canvas-holder">
-				<canvas id="chart-area"/>
-			</div>';
+	public static function print_doughnut( $widget_id ) {
+		if ( ! $widget_id ) {
+			$widget_id = 'admin';
+		}
+		printf( '<div id="canvas-holder">
+				<canvas id="chart-area-%s"/>
+			</div>',
+			$widget_id
+		);
 	}
 
 	/**

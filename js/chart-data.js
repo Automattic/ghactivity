@@ -7,9 +7,10 @@ jQuery(document).ready(function() {
 });
 
 // Set our doughnut chart
+var doughnutID = 'chart-area-' + chart_options.doughnut_id;
 var doughnutData = chart_options.doughtnut_data;
 window.onload = function() {
-	var ctx = document.getElementById("chart-area").getContext("2d");
+	var ctx = document.getElementById(doughnutID).getContext("2d");
 	window.myDoughnut = new Chart(ctx).Doughnut(doughnutData, {
 		responsive: true
 	});

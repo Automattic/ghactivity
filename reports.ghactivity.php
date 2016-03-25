@@ -41,8 +41,22 @@ class GHActivity_Reports {
 			return;
 		}
 
+		$dates = array(
+			'date_start' => $options['date_start'],
+			'date_end'   => $options['date_end'],
+		);
+
+		/**
+		 * Filter the dates used to generated the main report data.
+		 *
+		 * @since 1.3.1
+		 *
+		 * @param array $dates Array of the report data ranges.
+		 */
+		$dates = apply_filters( 'ghactivity_main_report_dates', $dates );
+
 		// Action count during that period.
-		$action_count = GHActivity_Calls::count_posts_per_event_type( $options['date_start'], $options['date_end'] );
+		$action_count = GHActivity_Calls::count_posts_per_event_type( $dates['date_start'], $dates['date_end'] );
 
 		// Remove all actions with a count of 0. We won't need to display them.
 		$action_count = array_filter( $action_count );
@@ -66,7 +80,7 @@ class GHActivity_Reports {
 		/**
 		 * Add number of commits to the report.
 		 */
-		$commit_count = GHActivity_Calls::count_commits( $options['date_start'], $options['date_end'] );
+		$commit_count = GHActivity_Calls::count_commits( $dates['date_start'], $dates['date_end'] );
 
 		$commits_key = __( 'Committed', 'ghactivity' );
 		$action_count[ $commits_key ] = (int) $commit_count;
