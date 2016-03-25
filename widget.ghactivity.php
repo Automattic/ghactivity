@@ -22,6 +22,7 @@ class GHActivity_Widget extends WP_Widget {
 			__( 'GitHub Activity', 'ghactivity' ),
 			array(
 				'description' => __( 'A widget to display activity from your GitHub account.', 'ghactivity' ),
+				'customize_selective_refresh' => true,
 			)
 		);
 	}

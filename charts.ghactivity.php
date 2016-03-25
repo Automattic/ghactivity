@@ -26,7 +26,11 @@ class GHActivity_Charts {
 		global $ghactivity_settings_page;
 
 		// Decide where scripts are enqueued in admin
-		if ( is_admin() && $ghactivity_settings_page != $hook ) {
+		if (
+			is_admin()
+			&& $ghactivity_settings_page != $hook
+			&& ! is_customize_preview()
+		) {
 			return;
 		}
 
