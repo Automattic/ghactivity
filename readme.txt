@@ -17,7 +17,7 @@ If you find bugs, you can report them [here](http://wordpress.org/support/plugin
 
 1. Install the GHActivity plugin via the WordPress.org plugin repository, or via your dashboard
 2. Activate the plugin
-3. Go to Settings > GHActivity Manager in your dashboard and configure the plugin.
+3. Go to Settings > GHActivity Activity Settings in your dashboard and configure the plugin.
 4. Enjoy! :)
 
 == Frequently Asked Questions ==
