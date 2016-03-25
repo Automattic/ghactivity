@@ -41,13 +41,15 @@ class GHActivity_Charts {
 		 */
 
 		// Look for the ghactivity shortcode.
-		if ( empty( $GLOBALS['posts'] ) || ! is_array( $GLOBALS['posts'] ) ) {
-			return;
-		}
-		foreach ( $GLOBALS['posts'] as $p ) {
-			if ( has_shortcode( $p->post_content, 'ghactivity' ) ) {
-				$this->_found_shortcode = true;
-				break;
+		if ( ! is_admin() ) {
+			if ( empty( $GLOBALS['posts'] ) || ! is_array( $GLOBALS['posts'] ) ) {
+				return;
+			}
+			foreach ( $GLOBALS['posts'] as $p ) {
+				if ( has_shortcode( $p->post_content, 'ghactivity' ) ) {
+					$this->_found_shortcode = true;
+					break;
+				}
 			}
 		}
 
