@@ -63,7 +63,16 @@ class GHActivity_Reports {
 			unset( $action_count[ $type ] );
 		}
 
+		/**
+		 * Add number of commits to the report.
+		 */
+		$commit_count = GHActivity_Calls::count_commits( $options['date_start'], $options['date_end'] );
+
+		$commits_key = __( 'Committed', 'ghactivity' );
+		$action_count[ $commits_key ] = (int) $commit_count;
+
 		$chart_data = GHActivity_Charts::get_action_chart_data( $action_count );
+
 		return $chart_data;
 	}
 
