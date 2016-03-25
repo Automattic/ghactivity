@@ -124,10 +124,11 @@ class GHActivity_Calls {
 		 *
 		 * @since 1.3
 		 *
+		 * @param string $ghactivity_event_type Clean event type returned after function.
 		 * @param string $event_type Event type returned by GitHub API.
 		 * @param string $action Action taken during event, as returned by GitHub API.
 		 */
-		$ghactivity_event_type = apply_filters( 'ghactivity_event_type', $event_type, $action );
+		$ghactivity_event_type = apply_filters( 'ghactivity_event_type', $ghactivity_event_type, $event_type, $action );
 
 		return $ghactivity_event_type;
 	}
