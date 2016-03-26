@@ -171,8 +171,8 @@ class GHActivity_Charts {
 
 			$chart_data[] = (object) array(
 				'value'     => absint( $count ),
-				'color'     => $color,
-				'highlight' => $highlight,
+				'color'     => esc_attr( $color ),
+				'highlight' => esc_attr( $highlight ),
 				'label'     => esc_attr( $type ),
 			);
 		}
