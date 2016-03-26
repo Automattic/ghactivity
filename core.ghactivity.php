@@ -101,7 +101,7 @@ class GHActivity_Calls {
 			} else {
 				$ghactivity_event_type = __( 'PR touched', 'ghactivity' );
 			}
-		} elseif ( 'IssueCommentEvent' == $event_type ) {
+		} elseif ( 'IssueCommentEvent' == $event_type || 'CommitCommentEvent' == $event_type ) {
 			$ghactivity_event_type = __( 'Comment', 'ghactivity' );
 		} elseif ( 'PullRequestReviewCommentEvent' == $event_type ) {
 			$ghactivity_event_type = __( 'Reviewed a PR', 'ghactivity' );
