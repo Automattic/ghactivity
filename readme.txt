@@ -1,9 +1,9 @@
 === GHActivity ===
 Contributors: jeherve
 Tags: GitHub, Tracking, Productivity,
-Stable tag: 1.3
+Stable tag: 1.3.1
 Requires at least: 4.4.2
-Tested up to: 4.4.2
+Tested up to: 4.5
 
 Monitor all your activity on GitHub, and posts reports about it on your WordPress site.
 
@@ -23,6 +23,11 @@ If you find bugs, you can report them [here](http://wordpress.org/support/plugin
 == Frequently Asked Questions ==
 
 == Changelog ==
+
+= 1.3.1 =
+* Add [Selective Refresh](https://make.wordpress.org/core/2016/03/22/implementing-selective-refresh-support-for-widgets/) support to the widget.
+* Add number of commits to the reports.
+* Add new event type for comments on commits.
 
 = 1.3 =
 * Add new option for those who do not want to store info from private repos.
