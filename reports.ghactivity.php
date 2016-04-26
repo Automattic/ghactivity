@@ -85,6 +85,14 @@ class GHActivity_Reports {
 		$commits_key = __( 'Committed', 'ghactivity' );
 		$action_count[ $commits_key ] = (int) $commit_count;
 
+		/**
+		 * Add number of repos to the report.
+		 */
+		$repos_count = GHActivity_Calls::count_repos( $dates['date_start'], $dates['date_end'] );
+
+		$repos_key = __( 'Projects', 'ghactivity' );
+		$action_count[ $repos_key ] = (int) $repos_count;
+
 		$chart_data = GHActivity_Charts::get_action_chart_data( $action_count );
 
 		return $chart_data;

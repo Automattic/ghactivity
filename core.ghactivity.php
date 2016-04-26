@@ -322,5 +322,61 @@ class GHActivity_Calls {
 
 		return (int) $count;
 	}
+
+	/**
+	 * Count the number of repos where you were involved in a specific time period.
+	 *
+	 * @since 1.4
+	 *
+	 * @param string $date_start Starting date range, using a strtotime compatible format.
+	 * @param string $date_end   End date range, using a strtotime compatible format.
+	 *
+	 * @return int $count Number of repos during that time period.
+	 */
+	public static function count_repos( $date_start, $date_end ) {
+		$repos = array();
+
+		$args = array(
+			'post_type'      => 'ghactivity_event',
+			'post_status'    => 'publish',
+			'posts_per_page' => -1,  // Show all posts.
+			'date_query'     => array(
+				'after' => $date_start,
+				'before' => $date_end,
+				'inclusive' => true,
+			),
+		);
+		/**
+		 * Filter WP Query arguments used to count the number of repos in a specific date range.
+		 *
+		 * @since 1.4
+		 *
+		 * @param array $args Array of WP Query arguments.
+		 */
+		$args = apply_filters( 'ghactivity_count_repos_query_args', $args );
+
+		// Start a Query
+		$query = new WP_Query( $args );
+
+		while ( $query->have_posts() ) {
+			$query->the_post();
+
+			$terms = get_the_terms( $query->post->ID, 'ghactivity_repo' );
+
+			if ( $terms && ! is_wp_error( $terms ) ) {
+				foreach ( $terms as $term ) {
+					if ( isset( $repos[ $term->slug ] ) ) {
+						$repos[ $term->slug ]++;
+					} else {
+						$repos[ $term->slug ] = 1;
+					}
+				}
+			}
+
+		}
+		wp_reset_postdata();
+
+		return (int) count( $repos );
+	}
 }
 new GHActivity_Calls();
