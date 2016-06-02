@@ -112,7 +112,9 @@ class GHActivity_Calls {
 		} elseif ( 'ReleaseEvent' == $event_type ) {
 			$ghactivity_event_type = __( 'Created a release', 'ghactivity' );
 		} elseif ( 'DeleteEvent' == $event_type ) {
-			$ghactivity_event_type = __( 'Deleted a branch');
+			$ghactivity_event_type = __( 'Deleted a branch' );
+		} elseif ( 'GollumEvent' == $event_type ) {
+			$ghactivity_event_type = __( 'Edited a Wiki page' );
 		} else {
 			$ghactivity_event_type = __( 'Did something', 'ghactivity' );
 		}
