@@ -115,6 +115,8 @@ class GHActivity_Calls {
 			$ghactivity_event_type = __( 'Deleted a branch' );
 		} elseif ( 'GollumEvent' == $event_type ) {
 			$ghactivity_event_type = __( 'Edited a Wiki page' );
+		} elseif ( 'ForkEvent' == $event_type ) {
+			$ghactivity_event_type = __( 'Forked a repo' );
 		} else {
 			$ghactivity_event_type = __( 'Did something', 'ghactivity' );
 		}
