@@ -3,7 +3,7 @@ Contributors: jeherve
 Tags: GitHub, Tracking, Productivity,
 Stable tag: 1.3.1
 Requires at least: 4.4.2
-Tested up to: 4.5
+Tested up to: 4.6
 
 Monitor all your activity on GitHub, and posts reports about it on your WordPress site.
 
