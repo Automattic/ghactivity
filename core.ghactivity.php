@@ -79,6 +79,9 @@ class GHActivity_Calls {
 			'gregwp',
 			'annezazuu',
 			'danjjohnson',
+			'aheckler',
+			'madhattermattic',
+			'mbhthompson',
 		);
 
 		foreach ( $dash as $bee ) {
