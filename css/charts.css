@@ -18,3 +18,8 @@
 	-webkit-border-radius: 3px 3px;
 	border-radius: 3px/3px;
 }
+
+/* Custom styles for frontend display */
+.page #ghactivity_admin_report {
+	width: 100%;
+}

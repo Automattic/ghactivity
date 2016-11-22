@@ -29,12 +29,16 @@ class GHActivity_Reports {
 	 *
 	 * @since 1.2
 	 *
+	 * @param array $options Array of custom Chart options.
+	 *
 	 * @return null|array $chart_data
 	 */
-	public function get_main_report_data() {
+	public function get_main_report_data( $options ) {
 
 		// Get options.
-		$options = (array) get_option( 'ghactivity' );
+		if ( empty( $options ) || ! isset( $options ) ) {
+			$options = (array) get_option( 'ghactivity' );
+		}
 
 		// If no dates were set, give up now.
 		if ( ! isset( $options['date_start'], $options['date_end'] ) ) {

@@ -51,22 +51,57 @@ class GHActivity_Calls {
 	 */
 	private function get_github_activity() {
 
-		$query_url = sprintf(
-			'https://api.github.com/users/%1$s/events?access_token=%2$s',
-			$this->get_option( 'username' ),
-			$this->get_option( 'access_token' )
+		$response_body = array();
+
+		// Everyone on the team.
+		$dash = array(
+			'jeherve',
+			'richardmtl',
+			'csonnek',
+			'rcowles',
+			'kraftbj',
+			'chaselivingston',
+			'jenhooks',
+			'ntpixels',
+			'macmanx2',
+			'lschuyler',
+			'seejacobscott',
+			'davoraltman',
+			'lamdayap',
+			'rachelsquirrel',
+			'scarstocea',
+			'stefmattana',
+			'jamilabreu',
+			'cena',
+			'v18',
+			'bikedorkjon',
+			'drpottex',
+			'gregwp',
+			'annezazuu',
+			'danjjohnson',
 		);
-		$data = wp_remote_get( esc_url_raw( $query_url ) );
 
-		if (
-			is_wp_error( $data )
-			|| 200 != $data['response']['code']
-			|| empty( $data['body'] )
-		) {
-			return;
+		foreach ( $dash as $bee ) {
+			$query_url = sprintf(
+				'https://api.github.com/users/%1$s/events?access_token=%2$s',
+				$bee,
+				$this->get_option( 'access_token' )
+			);
+
+			$data = wp_remote_get( esc_url_raw( $query_url ) );
+
+			if (
+				is_wp_error( $data )
+				|| 200 != $data['response']['code']
+				|| empty( $data['body'] )
+			) {
+				continue;
+			}
+
+			$single_response_body = json_decode( $data['body'] );
+
+			$response_body = array_merge( $single_response_body, $response_body );
 		}
-
-		$response_body = json_decode( $data['body'] );
 
 		return $response_body;
 	}

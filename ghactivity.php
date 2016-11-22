@@ -53,6 +53,9 @@ class Jeherve_GHActivity {
 		if ( is_admin() ) {
 			require_once( GHACTIVITY__PLUGIN_DIR . 'admin.ghactivity.php' );
 		}
+
+		// Load shortcode
+		require_once( GHACTIVITY__PLUGIN_DIR . 'shortcode.ghactivity.php' );
 	}
 
 	public function flush_rules_on_enable() {
