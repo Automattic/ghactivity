@@ -62,7 +62,7 @@ function ghactivity_options_init() {
 	);
 	add_settings_field(
 		'username',
-		__( 'GitHub Username', 'ghactivity' ),
+		__( 'GitHub Username. You can also enter a comma-separated list of usernames.', 'ghactivity' ),
 		'ghactivity_app_settings_username_callback',
 		'ghactivity',
 		'ghactivity_app_settings'
@@ -196,7 +196,7 @@ function ghactivity_date_end_callback() {
  * @return array $input Sanitized options.
  */
 function ghactivity_settings_validate( $input ) {
-	$input['username']        = sanitize_user( $input['username'] );
+	$input['username']        = sanitize_text_field( $input['username'] );
 	$input['client_id']       = sanitize_key( $input['access_token'] );
 	$input['display_private'] = (bool) $input['display_private'];
 	$input['date_start']      = sanitize_text_field( $input['date_start'] );

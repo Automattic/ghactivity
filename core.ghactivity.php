@@ -53,41 +53,17 @@ class GHActivity_Calls {
 
 		$response_body = array();
 
-		// Everyone on the team.
-		$dash = array(
-			'jeherve',
-			'richardmtl',
-			'csonnek',
-			'rcowles',
-			'kraftbj',
-			'chaselivingston',
-			'jenhooks',
-			'ntpixels',
-			'macmanx2',
-			'lschuyler',
-			'seejacobscott',
-			'davoraltman',
-			'lamdayap',
-			'rachelsquirrel',
-			'scarstocea',
-			'stefmattana',
-			'jamilabreu',
-			'cena',
-			'v18',
-			'bikedorkjon',
-			'drpottex',
-			'gregwp',
-			'annezazuu',
-			'danjjohnson',
-			'aheckler',
-			'madhattermattic',
-			'mbhthompson',
-		);
+		/**
+		 * Create an array of usernames.
+		 * I try to account for single usernames, comma separated lists, space separated lists, and comma + space lists.
+		 */
+		$usernames = array_filter( preg_split( '/[,\s]+/', $this->get_option( 'username' ) ) );
 
-		foreach ( $dash as $bee ) {
+		// Loop through that array and make a request to the GitHub API for each person.
+		foreach ( $usernames as $username ) {
 			$query_url = sprintf(
 				'https://api.github.com/users/%1$s/events?access_token=%2$s',
-				$bee,
+				$username,
 				$this->get_option( 'access_token' )
 			);
 
