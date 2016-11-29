@@ -3,7 +3,7 @@ Contributors: jeherve
 Tags: GitHub, Tracking, Productivity,
 Stable tag: 1.3.1
 Requires at least: 4.4.2
-Tested up to: 4.6
+Tested up to: 4.7
 
 Monitor all your activity on GitHub, and posts reports about it on your WordPress site.
 
@@ -12,6 +12,8 @@ Monitor all your activity on GitHub, and posts reports about it on your WordPres
 Monitor all your activity on GitHub, and posts reports about it on your WordPress site.
 
 If you find bugs, you can report them [here](http://wordpress.org/support/plugin/ghactivity), or submit a pull request [on GitHub](https://github.com/jeherve/ghactivity/).
+
+You can also use the `[jeherve_ghactivity]` shortcode to display stats on the frontend.
 
 == Installation ==
 
