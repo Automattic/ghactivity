@@ -1,7 +1,7 @@
 === GHActivity ===
 Contributors: jeherve
 Tags: GitHub, Tracking, Productivity,
-Stable tag: 1.3.1
+Stable tag: 1.4.0
 Requires at least: 4.4.2
 Tested up to: 4.7
 
@@ -25,6 +25,10 @@ You can also use the `[jeherve_ghactivity]` shortcode to display stats on the fr
 == Frequently Asked Questions ==
 
 == Changelog ==
+
+= 1.4.0 =
+* Start tracking most popular issues in repos.
+* Track multiple people within a team, and get stats for each one of them.
 
 = 1.3.1 =
 * Add [Selective Refresh](https://make.wordpress.org/core/2016/03/22/implementing-selective-refresh-support-for-widgets/) support to the widget.
