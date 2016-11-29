@@ -215,10 +215,11 @@ class GHActivity_Calls {
 						$action = '';
 					}
 
-					// Create taxonomies
+					// Create taxonomies.
 					$taxonomies = array(
 						'ghactivity_event_type' => esc_html( $this->get_event_type( $event->type, $action ) ),
-						'ghactivity_repo' => esc_html( $event->repo->name ),
+						'ghactivity_repo'       => esc_html( $event->repo->name ),
+						'ghactivity_actor'      => esc_html( $event->actor->display_login ),
 					);
 
 					// Build Post Content.
@@ -244,6 +245,9 @@ class GHActivity_Calls {
 					);
 					wp_set_object_terms(
 						$post_id, $taxonomies['ghactivity_repo'], 'ghactivity_repo', true
+					);
+					wp_set_object_terms(
+						$post_id, $taxonomies['ghactivity_actor'], 'ghactivity_actor', true
 					);
 				}
 			}

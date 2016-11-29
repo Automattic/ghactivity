@@ -154,3 +154,43 @@ function ghactivity_register_repo_taxonomy() {
 
 }
 add_action( 'init', 'ghactivity_register_repo_taxonomy', 0 );
+
+// Register Custom Taxonomy,
+function ghactivity_register_actor_taxonomy() {
+
+	$labels = array(
+		'name'                       => _x( 'People', 'Taxonomy General Name', 'ghactivity' ),
+		'singular_name'              => _x( 'Person', 'Taxonomy Singular Name', 'ghactivity' ),
+		'menu_name'                  => __( 'Person', 'ghactivity' ),
+		'all_items'                  => __( 'Everyone', 'ghactivity' ),
+		'parent_item'                => __( 'Parent Item', 'ghactivity' ),
+		'parent_item_colon'          => __( 'Parent Item:', 'ghactivity' ),
+		'new_item_name'              => __( 'New Person Name', 'ghactivity' ),
+		'add_new_item'               => __( 'Add New Person', 'ghactivity' ),
+		'edit_item'                  => __( 'Edit Person', 'ghactivity' ),
+		'update_item'                => __( 'Update Person', 'ghactivity' ),
+		'view_item'                  => __( 'View Person', 'ghactivity' ),
+		'separate_items_with_commas' => __( 'Separate items with commas', 'ghactivity' ),
+		'add_or_remove_items'        => __( 'Add or remove items', 'ghactivity' ),
+		'choose_from_most_used'      => __( 'Choose from the most used', 'ghactivity' ),
+		'popular_items'              => __( 'Popular Items', 'ghactivity' ),
+		'search_items'               => __( 'Search Items', 'ghactivity' ),
+		'not_found'                  => __( 'Not Found', 'ghactivity' ),
+		'no_terms'                   => __( 'No items', 'ghactivity' ),
+		'items_list'                 => __( 'Items list', 'ghactivity' ),
+		'items_list_navigation'      => __( 'Items list navigation', 'ghactivity' ),
+	);
+	$args = array(
+		'labels'                     => $labels,
+		'hierarchical'               => false,
+		'public'                     => true,
+		'show_ui'                    => true,
+		'show_admin_column'          => true,
+		'show_in_nav_menus'          => true,
+		'show_tagcloud'              => true,
+		'show_in_rest'               => true,
+	);
+	register_taxonomy( 'ghactivity_actor', array( 'ghactivity_event' ), $args );
+
+}
+add_action( 'init', 'ghactivity_register_actor_taxonomy', 0 );
