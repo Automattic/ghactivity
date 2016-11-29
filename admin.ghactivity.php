@@ -75,6 +75,13 @@ function ghactivity_options_init() {
 		'ghactivity_app_settings'
 	);
 	add_settings_field(
+		'repos',
+		__( 'Do you want to track popular issues in specific GitHub repos Enter them here.', 'ghactivity' ),
+		'ghactivity_app_settings_repos_callback',
+		'ghactivity',
+		'ghactivity_app_settings'
+	);
+	add_settings_field(
 		'display_private',
 		__( 'Do you want to store information about private repositories?', 'ghactivity' ),
 		'ghactivity_app_settings_privacy_callback',
@@ -145,6 +152,15 @@ function ghactivity_app_settings_token_callback() {
 	);
 }
 
+// GitHub Username option.
+function ghactivity_app_settings_repos_callback() {
+	$options = (array) get_option( 'ghactivity' );
+	printf(
+		'<input type="text" name="ghactivity[repos]" value="%s" />',
+		isset( $options['repos'] ) ? esc_attr( $options['repos'] ) : ''
+	);
+}
+
 // Do you want to store information from private repositories as well?
 function ghactivity_app_settings_privacy_callback() {
 	$options = (array) get_option( 'ghactivity' );
@@ -199,6 +215,7 @@ function ghactivity_settings_validate( $input ) {
 	$input['username']        = sanitize_text_field( $input['username'] );
 	$input['client_id']       = sanitize_key( $input['access_token'] );
 	$input['display_private'] = (bool) $input['display_private'];
+	$input['repos']           = sanitize_text_field( $input['repos'] );
 	$input['date_start']      = sanitize_text_field( $input['date_start'] );
 	$input['date_end']        = sanitize_text_field( $input['date_end'] );
 

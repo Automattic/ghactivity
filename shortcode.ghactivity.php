@@ -48,5 +48,19 @@ function jeherve_ghactivity_short_markup() {
 		date_i18n( get_option( 'date_format' ), strtotime( date( 'Y-m-d' ) ) )
 	);
 
-	return $markup;
+	// Get a list of Top Issues.
+	$top_issues = get_transient( 'ghactivity_top_issues' );
+
+	if ( false != $top_issues ) {
+		$markup .= $top_issues;
+	}
+
+	/**
+	 * Filter the content of the GitHub activity shortcode output.
+	 *
+	 * @since 1.4.0
+	 *
+	 * @param string $markup Shortcode HTML markup.
+	 */
+	return apply_filters( 'ghactivity_shortcode_output', $markup );
 }

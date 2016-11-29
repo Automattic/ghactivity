@@ -19,6 +19,14 @@
 	border-radius: 3px/3px;
 }
 
+.ghactivity_popular_issues {
+	clear: both;
+}
+
+.ghactivity_popular_issues ol li span.count {
+	color: #a3a3a3;
+}
+
 /* Custom styles for frontend display */
 .page #ghactivity_admin_report {
 	width: 100%;

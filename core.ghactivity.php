@@ -165,7 +165,7 @@ class GHActivity_Calls {
 		 */
 		if ( isset( $github_events ) && is_array( $github_events ) ) {
 
-			foreach( $github_events as $event ) {
+			foreach ( $github_events as $event ) {
 				// Let's not keep private events if you don't want to save them.
 				if (
 					false == $event->public
@@ -227,7 +227,6 @@ class GHActivity_Calls {
 					);
 				}
 			}
-
 		}
 	}
 
@@ -263,7 +262,7 @@ class GHActivity_Calls {
 		 */
 		$args = apply_filters( 'ghactivity_count_posts_event_type_query_args', $args );
 
-		// Start a Query
+		// Start a Query.
 		$query = new WP_Query( $args );
 
 		while ( $query->have_posts() ) {
@@ -331,7 +330,7 @@ class GHActivity_Calls {
 		 */
 		$args = apply_filters( 'ghactivity_count_commits_query_args', $args );
 
-		// Start a Query
+		// Start a Query.
 		$query = new WP_Query( $args );
 
 		while ( $query->have_posts() ) {
@@ -377,7 +376,7 @@ class GHActivity_Calls {
 		 */
 		$args = apply_filters( 'ghactivity_count_repos_query_args', $args );
 
-		// Start a Query
+		// Start a Query.
 		$query = new WP_Query( $args );
 
 		while ( $query->have_posts() ) {
@@ -394,7 +393,6 @@ class GHActivity_Calls {
 					}
 				}
 			}
-
 		}
 		wp_reset_postdata();
 
