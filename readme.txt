@@ -1,9 +1,9 @@
 === GHActivity ===
 Contributors: jeherve
 Tags: GitHub, Tracking, Productivity,
-Stable tag: 1.3.1
+Stable tag: 1.4.0
 Requires at least: 4.4.2
-Tested up to: 4.6
+Tested up to: 4.7
 
 Monitor all your activity on GitHub, and posts reports about it on your WordPress site.
 
@@ -12,6 +12,8 @@ Monitor all your activity on GitHub, and posts reports about it on your WordPres
 Monitor all your activity on GitHub, and posts reports about it on your WordPress site.
 
 If you find bugs, you can report them [here](http://wordpress.org/support/plugin/ghactivity), or submit a pull request [on GitHub](https://github.com/jeherve/ghactivity/).
+
+You can also use the `[jeherve_ghactivity]` shortcode to display stats on the frontend.
 
 == Installation ==
 
@@ -23,6 +25,10 @@ If you find bugs, you can report them [here](http://wordpress.org/support/plugin
 == Frequently Asked Questions ==
 
 == Changelog ==
+
+= 1.4.0 =
+* Start tracking most popular issues in repos.
+* Track multiple people within a team, and get stats for each one of them.
 
 = 1.3.1 =
 * Add [Selective Refresh](https://make.wordpress.org/core/2016/03/22/implementing-selective-refresh-support-for-widgets/) support to the widget.

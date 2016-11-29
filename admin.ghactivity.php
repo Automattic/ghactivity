@@ -62,7 +62,7 @@ function ghactivity_options_init() {
 	);
 	add_settings_field(
 		'username',
-		__( 'GitHub Username', 'ghactivity' ),
+		__( 'GitHub Username. You can also enter a comma-separated list of usernames.', 'ghactivity' ),
 		'ghactivity_app_settings_username_callback',
 		'ghactivity',
 		'ghactivity_app_settings'
@@ -71,6 +71,13 @@ function ghactivity_options_init() {
 		'access_token',
 		__( 'Personal Access Token', 'ghactivity' ),
 		'ghactivity_app_settings_token_callback',
+		'ghactivity',
+		'ghactivity_app_settings'
+	);
+	add_settings_field(
+		'repos',
+		__( 'Do you want to track popular issues in specific GitHub repos Enter them here.', 'ghactivity' ),
+		'ghactivity_app_settings_repos_callback',
 		'ghactivity',
 		'ghactivity_app_settings'
 	);
@@ -145,6 +152,15 @@ function ghactivity_app_settings_token_callback() {
 	);
 }
 
+// GitHub Username option.
+function ghactivity_app_settings_repos_callback() {
+	$options = (array) get_option( 'ghactivity' );
+	printf(
+		'<input type="text" name="ghactivity[repos]" value="%s" />',
+		isset( $options['repos'] ) ? esc_attr( $options['repos'] ) : ''
+	);
+}
+
 // Do you want to store information from private repositories as well?
 function ghactivity_app_settings_privacy_callback() {
 	$options = (array) get_option( 'ghactivity' );
@@ -196,9 +212,10 @@ function ghactivity_date_end_callback() {
  * @return array $input Sanitized options.
  */
 function ghactivity_settings_validate( $input ) {
-	$input['username']        = sanitize_user( $input['username'] );
+	$input['username']        = sanitize_text_field( $input['username'] );
 	$input['client_id']       = sanitize_key( $input['access_token'] );
 	$input['display_private'] = (bool) $input['display_private'];
+	$input['repos']           = sanitize_text_field( $input['repos'] );
 	$input['date_start']      = sanitize_text_field( $input['date_start'] );
 	$input['date_end']        = sanitize_text_field( $input['date_end'] );
 

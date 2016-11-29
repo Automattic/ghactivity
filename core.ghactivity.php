@@ -51,22 +51,36 @@ class GHActivity_Calls {
 	 */
 	private function get_github_activity() {
 
-		$query_url = sprintf(
-			'https://api.github.com/users/%1$s/events?access_token=%2$s',
-			$this->get_option( 'username' ),
-			$this->get_option( 'access_token' )
-		);
-		$data = wp_remote_get( esc_url_raw( $query_url ) );
+		$response_body = array();
 
-		if (
-			is_wp_error( $data )
-			|| 200 != $data['response']['code']
-			|| empty( $data['body'] )
-		) {
-			return;
+		/**
+		 * Create an array of usernames.
+		 * I try to account for single usernames, comma separated lists, space separated lists, and comma + space lists.
+		 */
+		$usernames = array_filter( preg_split( '/[,\s]+/', $this->get_option( 'username' ) ) );
+
+		// Loop through that array and make a request to the GitHub API for each person.
+		foreach ( $usernames as $username ) {
+			$query_url = sprintf(
+				'https://api.github.com/users/%1$s/events?access_token=%2$s',
+				$username,
+				$this->get_option( 'access_token' )
+			);
+
+			$data = wp_remote_get( esc_url_raw( $query_url ) );
+
+			if (
+				is_wp_error( $data )
+				|| 200 != $data['response']['code']
+				|| empty( $data['body'] )
+			) {
+				continue;
+			}
+
+			$single_response_body = json_decode( $data['body'] );
+
+			$response_body = array_merge( $single_response_body, $response_body );
 		}
-
-		$response_body = json_decode( $data['body'] );
 
 		return $response_body;
 	}
@@ -151,7 +165,7 @@ class GHActivity_Calls {
 		 */
 		if ( isset( $github_events ) && is_array( $github_events ) ) {
 
-			foreach( $github_events as $event ) {
+			foreach ( $github_events as $event ) {
 				// Let's not keep private events if you don't want to save them.
 				if (
 					false == $event->public
@@ -177,10 +191,11 @@ class GHActivity_Calls {
 						$action = '';
 					}
 
-					// Create taxonomies
+					// Create taxonomies.
 					$taxonomies = array(
 						'ghactivity_event_type' => esc_html( $this->get_event_type( $event->type, $action ) ),
-						'ghactivity_repo' => esc_html( $event->repo->name ),
+						'ghactivity_repo'       => esc_html( $event->repo->name ),
+						'ghactivity_actor'      => esc_html( $event->actor->display_login ),
 					);
 
 					// Build Post Content.
@@ -207,9 +222,11 @@ class GHActivity_Calls {
 					wp_set_object_terms(
 						$post_id, $taxonomies['ghactivity_repo'], 'ghactivity_repo', true
 					);
+					wp_set_object_terms(
+						$post_id, $taxonomies['ghactivity_actor'], 'ghactivity_actor', true
+					);
 				}
 			}
-
 		}
 	}
 
@@ -245,7 +262,7 @@ class GHActivity_Calls {
 		 */
 		$args = apply_filters( 'ghactivity_count_posts_event_type_query_args', $args );
 
-		// Start a Query
+		// Start a Query.
 		$query = new WP_Query( $args );
 
 		while ( $query->have_posts() ) {
@@ -313,7 +330,7 @@ class GHActivity_Calls {
 		 */
 		$args = apply_filters( 'ghactivity_count_commits_query_args', $args );
 
-		// Start a Query
+		// Start a Query.
 		$query = new WP_Query( $args );
 
 		while ( $query->have_posts() ) {
@@ -359,7 +376,7 @@ class GHActivity_Calls {
 		 */
 		$args = apply_filters( 'ghactivity_count_repos_query_args', $args );
 
-		// Start a Query
+		// Start a Query.
 		$query = new WP_Query( $args );
 
 		while ( $query->have_posts() ) {
@@ -376,7 +393,6 @@ class GHActivity_Calls {
 					}
 				}
 			}
-
 		}
 		wp_reset_postdata();
 
