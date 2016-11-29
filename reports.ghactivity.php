@@ -33,7 +33,7 @@ class GHActivity_Reports {
 	 *
 	 * @return null|array $chart_data
 	 */
-	public function get_main_report_data( $options ) {
+	public static function get_main_report_data( $options ) {
 
 		// Get options.
 		if ( empty( $options ) || ! isset( $options ) ) {
