@@ -1,7 +1,7 @@
 === GHActivity ===
 Contributors: jeherve
 Tags: GitHub, Tracking, Productivity,
-Stable tag: 1.4.1
+Stable tag: 1.4.2
 Requires at least: 4.4.2
 Tested up to: 4.7
 
@@ -25,6 +25,9 @@ You can also use the `[jeherve_ghactivity]` shortcode to display stats on the fr
 == Frequently Asked Questions ==
 
 == Changelog ==
+
+= 1.4.2 =
+* Make sure the chart data displayed in wp-admin is correct. It should not be polluted by data from the shortcode.
 
 = 1.4.1 =
 * Fix Fatal Error because of missing file.
