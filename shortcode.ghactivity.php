@@ -7,8 +7,20 @@ add_shortcode( 'jeherve_ghactivity', 'jeherve_ghactivity_short_markup' );
 
 /**
  * Get data for a custom report.
+ *
+ * @param array $chart_data Array of event objects to be used in a chart.
  */
-function jeherve_ghactivity_cust_report() {
+function jeherve_ghactivity_cust_report( $chart_data ) {
+	// Check if we are on a page with a shortcode. If not, bail now.
+	global $post;
+
+	if (
+		empty( $post )
+		|| ! has_shortcode( $post->post_content, 'jeherve_ghactivity' )
+	) {
+		return $chart_data;
+	}
+
 	// Grab original options.
 	$options = (array) get_option( 'ghactivity' );
 
