@@ -311,11 +311,23 @@ class GHActivity_Calls {
 	 *
 	 * @param string $date_start Starting date range, using a strtotime compatible format.
 	 * @param string $date_end   End date range, using a strtotime compatible format.
+	 * @param string $person     Get stats for a specific GitHub username.
 	 *
 	 * @return array $count Array of count of registered Event types.
 	 */
-	public static function count_posts_per_event_type( $date_start, $date_end ) {
+	public static function count_posts_per_event_type( $date_start, $date_end, $person = '' ) {
 		$count = array();
+
+		if ( empty( $person ) ) {
+			$person = get_terms( array(
+				'taxonomy'   => 'ghactivity_actor',
+				'hide_empty' => false,
+			) );
+
+			$person = wp_list_pluck( $person, 'name' );
+		} else {
+			$person = esc_html( $person );
+		}
 
 		$args = array(
 			'post_type'      => 'ghactivity_event',
@@ -325,6 +337,13 @@ class GHActivity_Calls {
 				'after' => $date_start,
 				'before' => $date_end,
 				'inclusive' => true,
+			),
+			'tax_query'      => array(
+				array(
+					'taxonomy' => 'ghactivity_actor',
+					'field'    => 'name',
+					'terms'    => $person,
+				),
 			),
 		);
 		/**
