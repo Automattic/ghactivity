@@ -87,7 +87,7 @@ class GHActivity_Reports {
 		/**
 		 * Add number of commits to the report.
 		 */
-		$commit_count = GHActivity_Calls::count_commits( $dates['date_start'], $dates['date_end'] );
+		$commit_count = GHActivity_Calls::count_commits( $dates['date_start'], $dates['date_end'], '' );
 
 		$commits_key = __( 'Committed', 'ghactivity' );
 		$action_count[ $commits_key ] = (int) $commit_count;
@@ -95,7 +95,7 @@ class GHActivity_Reports {
 		/**
 		 * Add number of repos to the report.
 		 */
-		$repos_count = GHActivity_Calls::count_repos( $dates['date_start'], $dates['date_end'] );
+		$repos_count = GHActivity_Calls::count_repos( $dates['date_start'], $dates['date_end'], '' );
 
 		$repos_key = __( 'Projects', 'ghactivity' );
 		$action_count[ $repos_key ] = (int) $repos_count;
