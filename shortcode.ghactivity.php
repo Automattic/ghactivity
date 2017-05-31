@@ -44,9 +44,15 @@ function jeherve_ghactivity_cust_report( $chart_data ) {
 add_filter( 'ghactivity_chart_data', 'jeherve_ghactivity_cust_report' );
 
 /**
- * Build shortcode
+ * Build shortcode.
+ *
+ * @param array $atts Array of shortcode attributes.
  */
-function jeherve_ghactivity_short_markup() {
+function jeherve_ghactivity_short_markup( $atts ) {
+	$atts = shortcode_atts( array(
+		'person'     => '',
+		'top_issues' => false,
+	), $atts, 'jeherve_ghactivity' );
 
 	$markup = sprintf(
 		'
@@ -63,7 +69,10 @@ function jeherve_ghactivity_short_markup() {
 	// Get a list of Top Issues.
 	$top_issues = get_transient( 'ghactivity_top_issues' );
 
-	if ( false != $top_issues ) {
+	if (
+		false != $top_issues
+		&& 'true' === $atts['top_issues']
+	) {
 		$markup .= $top_issues;
 	}
 
