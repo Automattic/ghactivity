@@ -50,7 +50,6 @@ add_filter( 'ghactivity_chart_data', 'jeherve_ghactivity_cust_report' );
  */
 function jeherve_ghactivity_short_markup( $atts ) {
 	$atts = shortcode_atts( array(
-		'person'     => '',
 		'top_issues' => false,
 	), $atts, 'jeherve_ghactivity' );
 
