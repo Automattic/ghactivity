@@ -270,12 +270,15 @@ class GHActivity_Calls {
 					);
 
 					// Build Post Content.
-					$post_content = sprintf(
-						/* translators: %1$s is an action taken, %2$s is a number of commits. */
-						__( '%1$s, including %2$s commits.', 'ghactivity' ),
-						$this->get_event_link( $event, $action ),
-						( $meta ? $meta['_github_commits'] : 'no' )
-					);
+					$post_content = $this->get_event_link( $event, $action );
+
+					// Mention the number of commits if there are any.
+					if ( $meta ) {
+						$post_content .= sprintf(
+							__( ', including %1$s commits.', 'ghactivity' ),
+							$meta['_github_commits']
+						);
+					}
 
 					$event_args = array(
 						'post_title'   => $event->id,
