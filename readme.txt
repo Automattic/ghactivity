@@ -1,9 +1,9 @@
 === GHActivity ===
 Contributors: jeherve
 Tags: GitHub, Tracking, Productivity,
-Stable tag: 1.4.2
+Stable tag: 1.5.0
 Requires at least: 4.4.2
-Tested up to: 4.7
+Tested up to: 4.8
 
 Monitor all your activity on GitHub, and posts reports about it on your WordPress site.
 
@@ -25,6 +25,11 @@ You can also use the `[jeherve_ghactivity]` shortcode to display stats on the fr
 == Frequently Asked Questions ==
 
 == Changelog ==
+
+= 1.5.0 =
+* Improve post content for each GitHub event.
+* Improve compatibility with queries per person.
+* Allow removing Top Issues from shortcode.
 
 = 1.4.2 =
 * Make sure the chart data displayed in wp-admin is correct. It should not be polluted by data from the shortcode.
