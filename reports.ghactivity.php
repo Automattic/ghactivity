@@ -63,7 +63,7 @@ class GHActivity_Reports {
 		$dates = apply_filters( 'ghactivity_main_report_dates', $dates );
 
 		// Action count during that period.
-		$action_count = GHActivity_Calls::count_posts_per_event_type( $dates['date_start'], $dates['date_end'] );
+		$action_count = GHActivity_Calls::count_posts_per_event_type( $dates['date_start'], $dates['date_end'], '' );
 
 		// Remove all actions with a count of 0. We won't need to display them.
 		$action_count = array_filter( $action_count );
@@ -87,7 +87,7 @@ class GHActivity_Reports {
 		/**
 		 * Add number of commits to the report.
 		 */
-		$commit_count = GHActivity_Calls::count_commits( $dates['date_start'], $dates['date_end'] );
+		$commit_count = GHActivity_Calls::count_commits( $dates['date_start'], $dates['date_end'], '' );
 
 		$commits_key = __( 'Committed', 'ghactivity' );
 		$action_count[ $commits_key ] = (int) $commit_count;
@@ -95,7 +95,7 @@ class GHActivity_Reports {
 		/**
 		 * Add number of repos to the report.
 		 */
-		$repos_count = GHActivity_Calls::count_repos( $dates['date_start'], $dates['date_end'] );
+		$repos_count = GHActivity_Calls::count_repos( $dates['date_start'], $dates['date_end'], '' );
 
 		$repos_key = __( 'Projects', 'ghactivity' );
 		$action_count[ $repos_key ] = (int) $repos_count;

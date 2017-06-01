@@ -152,6 +152,76 @@ class GHActivity_Calls {
 	}
 
 	/**
+	 * Get HTML link matching the event.
+	 *
+	 * @since 1.5.0
+	 *
+	 * @param object $event Event information returned by GitHub API.
+	 * @param string $action Action taken during event, as returned by GitHub API.
+	 *
+	 * @return string $link_html HTML link matching the action recorded by GitHub.
+	 */
+	private function get_event_link( $event, $action = '' ) {
+		if (
+			empty( $event )
+			|| empty( $event->type )
+		) {
+			return '';
+		}
+
+		if ( 'IssuesEvent' == $event->type ) {
+			$link = $event->payload->issue->html_url;
+		} elseif ( 'PullRequestEvent' == $event->type ) {
+			$link = $event->payload->pull_request->html_url;
+		} elseif (
+			'IssueCommentEvent' == $event->type
+			|| 'CommitCommentEvent' == $event->type
+			|| 'PullRequestReviewCommentEvent' == $event->type
+		) {
+			$link = $event->payload->comment->html_url;
+		} elseif ( 'PushEvent' == $event->type ) {
+			$link = sprintf(
+				'https://github.com/%1$s/commits/%2$s',
+				esc_attr( $event->repo->name ),
+				esc_attr( $event->payload->head )
+			);
+		} elseif ( 'CreateEvent' == $event->type ) {
+			$link = sprintf(
+				'https://github.com/%1$s/tree/%2$s',
+				esc_attr( $event->repo->name ),
+				esc_attr( $event->payload->ref )
+			);
+		} elseif ( 'ReleaseEvent' == $event->type ) {
+			$link = $event->payload->release->html_url;
+		} elseif ( 'ForkEvent' == $event->type ) {
+			$link = $event->payload->forkee->html_url;
+		} else {
+			$link = '';
+		}
+
+		if ( ! empty( $link ) ) {
+			$link_html = sprintf(
+				'<a href="%2$s">%1$s</a>',
+				esc_html( $this->get_event_type( $event->type, $action ) ),
+				esc_url( $link )
+			);
+		} else {
+			$link_html = esc_html( $this->get_event_type( $event->type, $action ) );
+		}
+
+		/**
+		 * Filter Event HTML link.
+		 *
+		 * @since 1.5.0
+		 *
+		 * @param string $link_html HTML tag including the link to the GitHub event.
+		 * @param object $event Event information returned by GitHub API.
+		 * @param string $action Action taken during event, as returned by GitHub API.
+		 */
+		return apply_filters( 'ghactivity_event_link_html', $link_html, $event, $action );
+	}
+
+	/**
 	 * Publish GitHub Event.
 	 *
 	 * @since 1.0
@@ -199,12 +269,15 @@ class GHActivity_Calls {
 					);
 
 					// Build Post Content.
-					$post_content = sprintf(
-						/* translators: %1$s is an action taken, %2$s is a number of commits. */
-						__( '%1$s, including %2$s commits.', 'ghactivity' ),
-						esc_html( $this->get_event_type( $event->type, $action ) ),
-						( $meta ? $meta['_github_commits'] : 'no' )
-					);
+					$post_content = $this->get_event_link( $event, $action );
+
+					// Mention the number of commits if there are any.
+					if ( $meta ) {
+						$post_content .= sprintf(
+							__( ', including %1$s commits.', 'ghactivity' ),
+							$meta['_github_commits']
+						);
+					}
 
 					$event_args = array(
 						'post_title'   => $event->id,
@@ -237,11 +310,23 @@ class GHActivity_Calls {
 	 *
 	 * @param string $date_start Starting date range, using a strtotime compatible format.
 	 * @param string $date_end   End date range, using a strtotime compatible format.
+	 * @param string $person     Get stats for a specific GitHub username.
 	 *
 	 * @return array $count Array of count of registered Event types.
 	 */
-	public static function count_posts_per_event_type( $date_start, $date_end ) {
+	public static function count_posts_per_event_type( $date_start, $date_end, $person = '' ) {
 		$count = array();
+
+		if ( empty( $person ) ) {
+			$person = get_terms( array(
+				'taxonomy'   => 'ghactivity_actor',
+				'hide_empty' => false,
+			) );
+
+			$person = wp_list_pluck( $person, 'name' );
+		} else {
+			$person = esc_html( $person );
+		}
 
 		$args = array(
 			'post_type'      => 'ghactivity_event',
@@ -251,6 +336,13 @@ class GHActivity_Calls {
 				'after' => $date_start,
 				'before' => $date_end,
 				'inclusive' => true,
+			),
+			'tax_query'      => array(
+				array(
+					'taxonomy' => 'ghactivity_actor',
+					'field'    => 'name',
+					'terms'    => $person,
+				),
 			),
 		);
 		/**
@@ -304,11 +396,23 @@ class GHActivity_Calls {
 	 *
 	 * @param string $date_start Starting date range, using a strtotime compatible format.
 	 * @param string $date_end   End date range, using a strtotime compatible format.
+	 * @param string $person     Get stats for a specific GitHub username.
 	 *
 	 * @return int $count Number of commits during that time period.
 	 */
-	public static function count_commits( $date_start, $date_end ) {
+	public static function count_commits( $date_start, $date_end, $person = '' ) {
 		$count = 0;
+
+		if ( empty( $person ) ) {
+			$person = get_terms( array(
+				'taxonomy'   => 'ghactivity_actor',
+				'hide_empty' => false,
+			) );
+
+			$person = wp_list_pluck( $person, 'name' );
+		} else {
+			$person = esc_html( $person );
+		}
 
 		$args = array(
 			'post_type'      => 'ghactivity_event',
@@ -319,6 +423,13 @@ class GHActivity_Calls {
 				'after' => $date_start,
 				'before' => $date_end,
 				'inclusive' => true,
+			),
+			'tax_query'      => array(
+				array(
+					'taxonomy' => 'ghactivity_actor',
+					'field'    => 'name',
+					'terms'    => $person,
+				),
 			),
 		);
 		/**
@@ -351,11 +462,23 @@ class GHActivity_Calls {
 	 *
 	 * @param string $date_start Starting date range, using a strtotime compatible format.
 	 * @param string $date_end   End date range, using a strtotime compatible format.
+	 * @param string $person     Get stats for a specific GitHub username.
 	 *
 	 * @return int $count Number of repos during that time period.
 	 */
-	public static function count_repos( $date_start, $date_end ) {
+	public static function count_repos( $date_start, $date_end, $person = '' ) {
 		$repos = array();
+
+		if ( empty( $person ) ) {
+			$person = get_terms( array(
+				'taxonomy'   => 'ghactivity_actor',
+				'hide_empty' => false,
+			) );
+
+			$person = wp_list_pluck( $person, 'name' );
+		} else {
+			$person = esc_html( $person );
+		}
 
 		$args = array(
 			'post_type'      => 'ghactivity_event',
@@ -365,6 +488,13 @@ class GHActivity_Calls {
 				'after' => $date_start,
 				'before' => $date_end,
 				'inclusive' => true,
+			),
+			'tax_query'      => array(
+				array(
+					'taxonomy' => 'ghactivity_actor',
+					'field'    => 'name',
+					'terms'    => $person,
+				),
 			),
 		);
 		/**
