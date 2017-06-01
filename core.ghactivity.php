@@ -161,11 +161,10 @@ class GHActivity_Calls {
 	 *
 	 * @return string $link_html HTML link matching the action recorded by GitHub.
 	 */
-	private function get_event_link( $event, $action ) {
+	private function get_event_link( $event, $action = '' ) {
 		if (
 			empty( $event )
 			|| empty( $event->type )
-			|| empty( $action )
 		) {
 			return '';
 		}
