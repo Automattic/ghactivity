@@ -324,8 +324,10 @@ class GHActivity_Calls {
 			) );
 
 			$person = wp_list_pluck( $person, 'name' );
-		} else {
+		} elseif ( is_string( $person ) ) {
 			$person = esc_html( $person );
+		} elseif ( is_array( $person ) ) {
+			$person = $person;
 		}
 
 		$args = array(
