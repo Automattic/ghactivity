@@ -412,6 +412,8 @@ class GHActivity_Calls {
 			) );
 
 			$person = wp_list_pluck( $person, 'name' );
+		} elseif ( is_array( $person ) ) {
+			$person = $person;
 		} else {
 			$person = esc_html( $person );
 		}
@@ -478,6 +480,8 @@ class GHActivity_Calls {
 			) );
 
 			$person = wp_list_pluck( $person, 'name' );
+		} elseif ( is_array( $person ) ) {
+			$person = $person;
 		} else {
 			$person = esc_html( $person );
 		}

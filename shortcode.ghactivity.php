@@ -32,8 +32,17 @@ function jeherve_ghactivity_cust_report( $chart_data ) {
 	$options['date_end'] = esc_attr( date( 'Y-m-d' ) );
 	$options['date_start'] = esc_attr( date( 'Y-m-d', strtotime( '-2 weeks' ) ) );
 
+	/**
+	 * Filter the list of people included in the reports.
+	 *
+	 * @since 1.6.0
+	 *
+	 * @param string|array $people Person or list of people included in the report.
+	 */
+	$people = apply_filters( 'ghactivity_cust_report_people', '' );
+
 	// Let's get some data for these custom dates.
-	$custom_report_data = GHActivity_Reports::get_main_report_data( $options );
+	$custom_report_data = GHActivity_Reports::get_main_report_data( $options, $people );
 
 	if ( ! empty( $custom_report_data ) ) {
 		return $custom_report_data;
