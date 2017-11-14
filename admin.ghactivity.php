@@ -89,6 +89,14 @@ function ghactivity_options_init() {
 		'ghactivity_app_settings'
 	);
 
+	// Repos Section
+	add_settings_section(
+		'ghactivity_repos_monitoring',
+		__( 'Monitoring activity on specific repositories', 'ghactivity' ),
+		'ghactivity_repos_monitoring_callback',
+		'ghactivity'
+	);
+
 	// Reports Section
 	add_settings_section(
 		'ghactivity_reports',
@@ -168,6 +176,57 @@ function ghactivity_app_settings_privacy_callback() {
 		'<input type="checkbox" name="ghactivity[display_private]" value="1" %s />',
 		checked( true, (bool) ( isset( $options['display_private'] ) ? $options['display_private'] : false ), false )
 	);
+}
+
+/**
+ * GitHub Activity Reports section.
+ *
+ * @since 1.6.0
+ */
+function ghactivity_repos_monitoring_callback() {
+	echo '<p>';
+	esc_html_e( 'The plugin allows you to monitor all activity for the following repos, even from users not listed above.', 'ghactivity' );
+	echo '</p>';
+
+	$repos_query_args = array(
+		'taxonomy'   => 'ghactivity_repo',
+		'hide_empty' => false,
+		'number'     => 10, // Just to make sure we don't get rate-limited by GH.
+		'fields'     => 'id=>name',
+		'meta_query' => array(
+			array(
+				'key'     => 'full_reporting',
+				'value'   => true,
+				'compare' => '='
+			),
+		),
+	);
+	$repos_to_monitor = get_terms( $repos_query_args );
+
+	// If we have repos to watch, let's get data for them.
+	if (
+		! is_wp_error( $repos_to_monitor )
+		&& is_array( $repos_to_monitor )
+		&& ! empty( $repos_to_monitor )
+	) {
+		echo '<ul>';
+		foreach ( $repos_to_monitor as $id => $name ) {
+			printf(
+				'<li>%s</li>',
+				esc_html( $name )
+			);
+		}
+		echo '</ul>';
+	}
+
+	echo '<p>';
+	esc_html_e( 'To monitor more repos, edit the repo you want to monitor, and check the box:', 'ghactivity' );
+	printf(
+		' <a href="%1$s">%2$s</a>',
+		esc_url( admin_url( 'edit-tags.php?taxonomy=ghactivity_repo&post_type=ghactivity_event' ) ),
+		esc_html__( 'Edit repositories recorded by the plugin.', 'ghactivity' )
+	);
+	echo '</p>';
 }
 
 /**

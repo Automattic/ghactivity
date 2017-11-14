@@ -82,6 +82,82 @@ class GHActivity_Calls {
 			$response_body = array_merge( $single_response_body, $response_body );
 		}
 
+		/**
+		 * Get an array of repos we want to follow a bit more closely.
+		 * For those repos we will log activity from everyone,
+		 * not just from the usernames set in the plugin options.
+		 *
+		 * We will select all repos from the ghactivity_repo taxonomy,
+		 * and monitor all those that have the `full_reporting` term meta set to true.
+		 */
+		$repos_query_args = array(
+			'taxonomy'   => 'ghactivity_repo',
+			'hide_empty' => false,
+			'number'     => 10, // Just to make sure we don't get rate-limited by GH.
+			'fields'     => 'id=>name',
+			'meta_query' => array(
+				array(
+					'key'     => 'full_reporting',
+					'value'   => true,
+					'compare' => '='
+				),
+			),
+		);
+		$repos_to_monitor = get_terms( $repos_query_args );
+
+		// If we have repos to watch, let's get data for them.
+		if (
+			! is_wp_error( $repos_to_monitor )
+			&& is_array( $repos_to_monitor )
+			&& ! empty( $repos_to_monitor )
+		) {
+			foreach ( $repos_to_monitor as $id => $name ) {
+				$repo_activity = $this->get_repo_activity( $name );
+				if ( isset( $repo_activity ) && is_array( $repo_activity ) ) {
+					$response_body = array_merge( $repo_activity, $response_body );
+				}
+			}
+		}
+
+		// Finally return the response.
+		return $response_body;
+	}
+
+	/**
+	 * Remote call to get data for a specific repo
+	 *
+	 * @since 1.6.0
+	 *
+	 * @param string $repo_name Name of the repo we want data from.
+	 *
+	 * @return null|array
+	 */
+	private function get_repo_activity( $repo_name ) {
+
+		$response_body = array();
+
+		if ( empty( $repo_name ) ) {
+			return $response_body;
+		}
+
+		$query_url = sprintf(
+			'https://api.github.com/repos/%1$s/events?access_token=%2$s',
+			esc_html( $repo_name ),
+			$this->get_option( 'access_token' )
+		);
+
+		$data = wp_remote_get( esc_url_raw( $query_url ) );
+
+		if (
+			is_wp_error( $data )
+			|| 200 != $data['response']['code']
+			|| empty( $data['body'] )
+		) {
+			return $response_body;
+		}
+
+		$response_body = json_decode( $data['body'] );
+
 		return $response_body;
 	}
 

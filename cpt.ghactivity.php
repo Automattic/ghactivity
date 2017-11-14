@@ -155,6 +155,63 @@ function ghactivity_register_repo_taxonomy() {
 }
 add_action( 'init', 'ghactivity_register_repo_taxonomy', 0 );
 
+/**
+ * Add a new field to the repo edit screen, where one can set a repo to be fully monitored.
+ *
+ * @since 1.6.0
+ *
+ * @param object $tag Current taxonomy term object.
+ * @param string $taxonomy Current taxonomy slug.
+ */
+function ghactivity_repo_full_reporting_field( $tag, $taxonomy ) {
+	$is_reporting_on = get_term_meta( $tag->term_id, 'full_reporting', true );
+
+	if ( ! $is_reporting_on ) {
+		$is_reporting_on = false;
+	}
+
+	echo '<tr class="form-field ghactivity-repo-full-reporting-wrap">';
+	printf(
+		'<th scope="row"><label for="ghactivity-repo-full-reporting"></label>%s</th>',
+		esc_html__( 'Log all activity for that repo', 'ghactivity' )
+	);
+	echo '<td>';
+
+	wp_nonce_field( basename( __FILE__ ), 'ghrepo_reporting_nonce' );
+	printf(
+		'<input type="checkbox" name="full_reporting" id="full_reporting" value="1" %s />',
+		checked( (bool) ( $is_reporting_on ), true, false )
+	);
+
+	echo '</td></tr>';
+}
+add_action( 'ghactivity_repo_edit_form_fields', 'ghactivity_repo_full_reporting_field', 10, 2 );
+
+/**
+ * Save the term meta when making changes to the repo monitoring field.
+ *
+ * @since 1.6.0
+ *
+ * @param int $term_id Term ID.
+ */
+function ghactivity_repo_full_reporting_save_field( $term_id ) {
+	if (
+		! isset( $_POST['ghrepo_reporting_nonce'] )
+		|| ! wp_verify_nonce( $_POST['ghrepo_reporting_nonce'], basename( __FILE__ ) )
+	) {
+		return;
+	}
+
+	if ( isset( $_POST['full_reporting'] ) && 1 == $_POST['full_reporting'] ) {
+		$is_reporting_on = true;
+	} else {
+		$is_reporting_on = false;
+	}
+
+	update_term_meta( $term_id, 'full_reporting', $is_reporting_on );
+}
+add_action( 'edit_ghactivity_repo', 'ghactivity_repo_full_reporting_save_field' );
+
 // Register Custom Taxonomy,
 function ghactivity_register_actor_taxonomy() {
 
