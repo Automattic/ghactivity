@@ -26,6 +26,10 @@ You can also use the `[jeherve_ghactivity]` shortcode to display stats on the fr
 
 == Changelog ==
 
+= 1.6.0 =
+* Allow filtering of the people included in reports. This way one can create their own custom reports.
+* Add option to monitor a repo fully, for all users on that repo.
+
 = 1.5.0 =
 * Improve post content for each GitHub event.
 * Improve compatibility with queries per person.
