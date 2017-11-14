@@ -162,6 +162,60 @@ class GHActivity_Calls {
 	}
 
 	/**
+	 * Remote call to get information about a specific GitHub user.
+	 *
+	 * @since 1.6.0
+	 *
+	 * @param string $gh_username GitHub username.
+	 *
+	 * @return array $gh_user_details Details about a GitHub user.
+	 */
+	private function get_person_details( $gh_username = '' ) {
+		$gh_user_details = array();
+
+		if ( empty( $gh_username ) ) {
+			return $gh_user_details;
+		}
+
+		// Let's get some info from GitHub.
+		$query_url = sprintf(
+			'https://api.github.com/users/%1$s?access_token=%2$s',
+			$gh_username,
+			$this->get_option( 'access_token' )
+		);
+		$data = wp_remote_get( esc_url_raw( $query_url ) );
+
+		if (
+			is_wp_error( $data )
+			|| 200 != $data['response']['code']
+			|| empty( $data['body'] )
+		) {
+			return $gh_user_details;
+		}
+
+		$person_info_body = json_decode( $data['body'] );
+
+		/**
+		 * Let's build a name based on the name field.
+		 * If it is not defined, fall back to username.
+		 */
+		if ( ! empty( $person_info_body->name ) ) {
+			$nicename = $person_info_body->name;
+		} else {
+			$nicename = $person_info_body->login;
+		}
+
+		// Build the array of data we will save.
+		$gh_user_details = array(
+			'name'       => esc_html( $nicename ),
+			'avatar_url' => esc_url( $person_info_body->avatar_url ),
+			'bio'        => esc_html( $person_info_body->bio ),
+		);
+
+		return $gh_user_details;
+	}
+
+	/**
 	 * Get an event type to use as a taxonomy, and in the post content.
 	 *
 	 * Starts from data collected with GitHub API, and displays a nice event type instead.
@@ -365,15 +419,48 @@ class GHActivity_Calls {
 						'post_content' => $post_content,
 					);
 					$post_id = wp_insert_post( $event_args );
-					wp_set_object_terms(
-						$post_id, $taxonomies['ghactivity_event_type'], 'ghactivity_event_type', true
-					);
-					wp_set_object_terms(
-						$post_id, $taxonomies['ghactivity_repo'], 'ghactivity_repo', true
-					);
-					wp_set_object_terms(
-						$post_id, $taxonomies['ghactivity_actor'], 'ghactivity_actor', true
-					);
+
+					/**
+					 * Establish the relationship between terms and taxonomies.
+					 */
+					foreach ( $taxonomies as $taxonomy => $value ) {
+						$term_taxonomy_ids = wp_set_object_terms( $post_id, $value, $taxonomy, true );
+
+						/**
+						 * Since wp_set_object_terms returned an array of term_taxonomy_ids after running,
+						 * we can use it to add more info to each term.
+						 * From Term taxonomy IDs, we'll get term IDs.
+						 * Then from there, we'l update the term and add a description and additional information if needed.
+						 */
+						if ( is_array( $term_taxonomy_ids ) && ! empty( $term_taxonomy_ids ) ) {
+							foreach ( $term_taxonomy_ids as $term_taxonomy_id ) {
+								/**
+								 * Let's search for people without info attached to their profile.
+								 * We'll try to get that info from GitHub.
+								 */
+								$term_id_object = get_term_by( 'term_taxonomy_id', $term_taxonomy_id, 'ghactivity_actor', ARRAY_A );
+								$term_id = (int) $term_id_object['term_id'];
+								if (
+									is_array( $term_id_object )
+									&& 'ghactivity_actor' === $term_id_object['taxonomy']
+									&& empty( get_term_meta( $term_id, 'github_info', true ) )
+								) {
+									$gh_user_details = $this->get_person_details( $term_id_object['name'] );
+									if ( ! empty( $gh_user_details ) ) {
+										// Add a bio and change the nice name.
+										$person_args = array(
+											'name'        => esc_html( $gh_user_details['name'] ),
+											'description' => esc_html( $gh_user_details['bio'] ),
+										);
+										wp_update_term( $term_id, 'ghactivity_actor', $person_args );
+
+										// Save all the info as term meta.
+										update_term_meta( $term_id, 'github_info', $gh_user_details );
+									}
+								}
+							}
+						}
+					} // End foreach().
 				}
 			}
 		}
