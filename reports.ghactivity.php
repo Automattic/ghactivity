@@ -65,7 +65,7 @@ class GHActivity_Reports {
 		$dates = apply_filters( 'ghactivity_main_report_dates', $dates );
 
 		// Action count during that period.
-		$action_count = GHActivity_Calls::count_posts_per_event_type( $dates['date_start'], $dates['date_end'], $people, $repo );
+		$action_count = GHActivity_Calls::count_posts_per_event_type( $dates['date_start'], $dates['date_end'], $people, $repo, false );
 
 		// Remove all actions with a count of 0. We won't need to display them.
 		$action_count = array_filter( $action_count );

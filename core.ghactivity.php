@@ -471,14 +471,15 @@ class GHActivity_Calls {
 	 *
 	 * @since 1.1
 	 *
-	 * @param string       $date_start Starting date range, using a strtotime compatible format.
-	 * @param string       $date_end   End date range, using a strtotime compatible format.
-	 * @param string       $person     Get stats for a specific GitHub username.
-	 * @param string|array $repo       Get stats for a specific GitHub repo, or a list of repos.
+	 * @param string       $date_start      Starting date range, using a strtotime compatible format.
+	 * @param string       $date_end        End date range, using a strtotime compatible format.
+	 * @param string       $person          Get stats for a specific GitHub username.
+	 * @param string|array $repo            Get stats for a specific GitHub repo, or a list of repos.
+	 * @param bool         $split_per_actor Split counts per actor.
 	 *
-	 * @return array       $count      Array of count of registered Event types.
+	 * @return array       $count           Array of count of registered Event types.
 	 */
-	public static function count_posts_per_event_type( $date_start, $date_end, $person = '', $repo = '' ) {
+	public static function count_posts_per_event_type( $date_start, $date_end, $person = '', $repo = '', $split_per_actor = false ) {
 		$count = array();
 
 		if ( empty( $person ) ) {
@@ -497,11 +498,11 @@ class GHActivity_Calls {
 		if ( empty( $repo ) ) {
 			$repo = get_terms( array(
 				'taxonomy'   => 'ghactivity_repo',
-				'hide_empty' => false,
+				'hide_empty' => true,
 				'fields'     => 'id=>slug',
 			) );
 
-			$repo = wp_list_pluck( $repo, 'slug' );
+			$repo = array_values( $repo );
 		} elseif ( is_string( $repo ) ) {
 			$repo = esc_html( $repo );
 		} elseif ( is_array( $repo ) ) {
@@ -548,12 +549,42 @@ class GHActivity_Calls {
 
 			$terms = get_the_terms( $query->post->ID, 'ghactivity_event_type' );
 
-			if ( $terms && ! is_wp_error( $terms ) ) {
-				foreach ( $terms as $term ) {
-					if ( isset( $count[ $term->slug ] ) ) {
-						$count[ $term->slug ]++;
-					} else {
-						$count[ $term->slug ] = 1;
+			/**
+			 * If we want to split the counts per actor,
+			 * we need to create an multidimensional array,
+			 * with counts for each person.
+			 */
+			if ( true === $split_per_actor ) {
+				$actor = get_the_terms( $query->post->ID, 'ghactivity_actor' );
+				if (
+					$terms
+					&& ! is_wp_error( $terms )
+					&& $actor
+					&& ! is_wp_error( $actor )
+				) {
+					foreach ( $actor as $a ) {
+						$actor_name = esc_html( $a->name );
+					}
+
+					if ( ! isset( $count[ $actor_name ] ) ) {
+						$count[ $actor_name ] = array();
+					}
+					foreach ( $terms as $term ) {
+						if ( isset( $count[ $actor_name ][ $term->slug ] ) ) {
+							$count[ $actor_name ][ $term->slug ]++;
+						} else {
+							$count[ $actor_name ][ $term->slug ] = 1;
+						}
+					}
+				}
+			} else {
+				if ( $terms && ! is_wp_error( $terms ) ) {
+					foreach ( $terms as $term ) {
+						if ( isset( $count[ $term->slug ] ) ) {
+							$count[ $term->slug ]++;
+						} else {
+							$count[ $term->slug ] = 1;
+						}
 					}
 				}
 			}

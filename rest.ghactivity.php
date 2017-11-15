@@ -87,7 +87,7 @@ class Ghactivity_Api {
 	public function get_repo_stats( $request ) {
 		// Get parameter from request.
 		if ( isset( $request['repo'] ) ) {
-			$repo  = $request['repo'];
+			$repo = esc_html( $request['repo'] );
 		} else {
 			return new WP_Error(
 				'not_found',
@@ -101,7 +101,7 @@ class Ghactivity_Api {
 		/**
 		 * Check if the repo exists on our site, if there were even events registered for it.
 		 */
-		$is_recorded_repo = get_term_by( 'name', $request['repo'], 'ghactivity_repo', ARRAY_A );
+		$is_recorded_repo = get_term_by( 'slug', $repo, 'ghactivity_repo', ARRAY_A );
 		if (
 			! is_array( $is_recorded_repo )
 			|| empty( $is_recorded_repo )
@@ -115,7 +115,76 @@ class Ghactivity_Api {
 			);
 		}
 
-		$response = $is_recorded_repo;
+		// Set some dates.
+		$now = date( 'c' );
+		$this_morning = date( 'c', strtotime( 'Today' ) );
+		$first_of_week = date( 'c', strtotime( 'Last monday' ) );
+		$first_of_month = date( 'c', strtotime( 'First day of this month' ) );
+
+		/**
+		 * And now get stats.
+		 */
+		$summary_this_day = GHActivity_Calls::count_posts_per_event_type(
+			$this_morning,
+			$now,
+			'',
+			$is_recorded_repo['slug'],
+			false
+		);
+
+		$summary_this_week = GHActivity_Calls::count_posts_per_event_type(
+			$first_of_week,
+			$now,
+			'',
+			$is_recorded_repo['slug'],
+			false
+		);
+
+		$summary_this_month = GHActivity_Calls::count_posts_per_event_type(
+			$first_of_month,
+			$now,
+			'',
+			$is_recorded_repo['slug'],
+			false
+		);
+
+		/**
+		 * Build summaries per actor.
+		 */
+		$actors_this_day = GHActivity_Calls::count_posts_per_event_type(
+			$this_morning,
+			$now,
+			'',
+			$is_recorded_repo['slug'],
+			true
+		);
+
+		$actors_this_week = GHActivity_Calls::count_posts_per_event_type(
+			$first_of_week,
+			$now,
+			'',
+			$is_recorded_repo['slug'],
+			true
+		);
+
+		$actors_this_month = GHActivity_Calls::count_posts_per_event_type(
+			$first_of_month,
+			$now,
+			'',
+			$is_recorded_repo['slug'],
+			true
+		);
+
+		$response = array(
+			'name'              => $is_recorded_repo['name'],
+			'date'              => $now,
+			'this_day'          => $summary_this_day,
+			'this_week'         => $summary_this_week,
+			'this_month'        => $summary_this_month,
+			'actors_this_day'   => $actors_this_day,
+			'actors_this_week'  => $actors_this_week,
+			'actors_this_month' => $actors_this_month,
+		);
 		return new WP_REST_Response( $response, 200 );
 	}
 } // End class.
