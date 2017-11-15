@@ -48,6 +48,7 @@ class Jeherve_GHActivity {
 		require_once( GHACTIVITY__PLUGIN_DIR . 'charts.ghactivity.php' );
 		require_once( GHACTIVITY__PLUGIN_DIR . 'reports.ghactivity.php' );
 		require_once( GHACTIVITY__PLUGIN_DIR . 'widget.ghactivity.php' );
+		require_once( GHACTIVITY__PLUGIN_DIR . 'rest.ghactivity.php' );
 
 		// Settings panel.
 		if ( is_admin() ) {
