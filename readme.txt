@@ -30,6 +30,7 @@ You can also use the `[jeherve_ghactivity]` shortcode to display stats on the fr
 * Allow filtering of the people included in reports. This way one can create their own custom reports.
 * Add option to monitor a repo fully, for all users on that repo.
 * Gather information about each person from GitHub.
+* Allow people to be assigned to a specific team. This will allow to build custom reports for groups of people.
 
 = 1.5.0 =
 * Improve post content for each GitHub event.
