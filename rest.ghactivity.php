@@ -38,7 +38,7 @@ class Ghactivity_Api {
 			'callback'            => array( $this, 'get_repo_stats' ),
 			'permission_callback' => array( $this, 'permissions_check' ),
 			'args'                => array(
-				'user'  => array(
+				'repo'  => array(
 					'required'          => true,
 					'validate_callback' => array( $this, 'validate_string' ),
 				),
