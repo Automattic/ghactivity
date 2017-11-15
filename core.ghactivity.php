@@ -471,13 +471,14 @@ class GHActivity_Calls {
 	 *
 	 * @since 1.1
 	 *
-	 * @param string $date_start Starting date range, using a strtotime compatible format.
-	 * @param string $date_end   End date range, using a strtotime compatible format.
-	 * @param string $person     Get stats for a specific GitHub username.
+	 * @param string       $date_start Starting date range, using a strtotime compatible format.
+	 * @param string       $date_end   End date range, using a strtotime compatible format.
+	 * @param string       $person     Get stats for a specific GitHub username.
+	 * @param string|array $repo       Get stats for a specific GitHub repo, or a list of repos.
 	 *
-	 * @return array $count Array of count of registered Event types.
+	 * @return array       $count      Array of count of registered Event types.
 	 */
-	public static function count_posts_per_event_type( $date_start, $date_end, $person = '' ) {
+	public static function count_posts_per_event_type( $date_start, $date_end, $person = '', $repo = '' ) {
 		$count = array();
 
 		if ( empty( $person ) ) {
@@ -493,6 +494,20 @@ class GHActivity_Calls {
 			$person = $person;
 		}
 
+		if ( empty( $repo ) ) {
+			$repo = get_terms( array(
+				'taxonomy'   => 'ghactivity_repo',
+				'hide_empty' => false,
+				'fields'     => 'id=>slug',
+			) );
+
+			$repo = wp_list_pluck( $repo, 'slug' );
+		} elseif ( is_string( $repo ) ) {
+			$repo = esc_html( $repo );
+		} elseif ( is_array( $repo ) ) {
+			$repo = $repo;
+		}
+
 		$args = array(
 			'post_type'      => 'ghactivity_event',
 			'post_status'    => 'publish',
@@ -503,10 +518,16 @@ class GHActivity_Calls {
 				'inclusive' => true,
 			),
 			'tax_query'      => array(
+				'relation' => 'AND',
 				array(
 					'taxonomy' => 'ghactivity_actor',
 					'field'    => 'name',
 					'terms'    => $person,
+				),
+				array(
+					'taxonomy' => 'ghactivity_repo',
+					'field'    => 'slug',
+					'terms'    => $repo,
 				),
 			),
 		);

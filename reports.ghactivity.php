@@ -34,10 +34,11 @@ class GHActivity_Reports {
 	 *
 	 * @param array        $options Array of custom Chart options.
 	 * @param string|array $people  Person or list of people included in the report.
+	 * @param string|array $repo    Repo or list of repos included in the report.
 	 *
 	 * @return null|array $chart_data
 	 */
-	public static function get_main_report_data( $options, $people = '' ) {
+	public static function get_main_report_data( $options, $people = '', $repo = '' ) {
 
 		// Get options.
 		if ( empty( $options ) || ! isset( $options ) ) {
@@ -64,7 +65,7 @@ class GHActivity_Reports {
 		$dates = apply_filters( 'ghactivity_main_report_dates', $dates );
 
 		// Action count during that period.
-		$action_count = GHActivity_Calls::count_posts_per_event_type( $dates['date_start'], $dates['date_end'], $people );
+		$action_count = GHActivity_Calls::count_posts_per_event_type( $dates['date_start'], $dates['date_end'], $people, $repo );
 
 		// Remove all actions with a count of 0. We won't need to display them.
 		$action_count = array_filter( $action_count );
