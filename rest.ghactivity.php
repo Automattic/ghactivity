@@ -91,7 +91,7 @@ class Ghactivity_Api {
 		} else {
 			return new WP_Error(
 				'not_found',
-				esc_html__( 'You did not specify a valid GitHub repo.', 'traktivity' ),
+				esc_html__( 'You did not specify a valid GitHub repo.', 'ghactivity' ),
 				array(
 					'status' => 404,
 				)
@@ -108,12 +108,17 @@ class Ghactivity_Api {
 		) {
 			return new WP_Error(
 				'not_found',
-				esc_html__( 'There were no events recorded for this repo.', 'traktivity' ),
+				esc_html__( 'There were no events recorded for this repo.', 'ghactivity' ),
 				array(
 					'status' => 404,
 				)
 			);
 		}
+
+		/**
+		 * Is the repo fully monitored?
+		 */
+		$full_reporting = ( true === get_term_meta( (int) $is_recorded_repo['term_id'], 'full_reporting', true ) ? true : false );
 
 		// Set some dates.
 		$now = date( 'c' );
@@ -177,6 +182,7 @@ class Ghactivity_Api {
 
 		$response = array(
 			'name'              => $is_recorded_repo['name'],
+			'full_reporting'    => $full_reporting,
 			'date'              => $now,
 			'this_day'          => $summary_this_day,
 			'this_week'         => $summary_this_week,

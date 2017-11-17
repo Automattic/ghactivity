@@ -307,7 +307,7 @@ function ghactivity_team_columns( $columns ) {
 	unset( $columns['slug'] );
 	unset( $columns['description'] );
 	unset( $columns['posts'] );
-	$columns['names']  = esc_html__( 'People', 'traktivity' );
+	$columns['names']  = esc_html__( 'People', 'ghactivity' );
 	return $columns;
 }
 add_filter( 'manage_edit-ghactivity_team_columns', 'ghactivity_team_columns' );
@@ -384,7 +384,7 @@ add_filter( 'manage_ghactivity_team_custom_column', 'ghactivity_team_display_peo
  * @param array $columns Array of columns on the screen we hook into.
  */
 function ghactivity_person_columns( $columns ) {
-	$columns['team']  = esc_html__( 'Team', 'traktivity' );
+	$columns['team']  = esc_html__( 'Team', 'ghactivity' );
 	return $columns;
 }
 add_filter( 'manage_edit-ghactivity_actor_columns', 'ghactivity_person_columns' );
