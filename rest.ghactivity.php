@@ -118,7 +118,7 @@ class Ghactivity_Api {
 		/**
 		 * Is the repo fully monitored?
 		 */
-		$full_reporting = ( true === get_term_meta( (int) $is_recorded_repo['term_id'], 'full_reporting', true ) ? true : false );
+		$full_reporting = ( '1' === get_term_meta( (int) $is_recorded_repo['term_id'], 'full_reporting', true ) ? true : false );
 
 		// Set some dates.
 		$now = date( 'c' );
