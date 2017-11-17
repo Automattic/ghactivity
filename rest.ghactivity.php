@@ -57,6 +57,7 @@ class Ghactivity_Api {
 	 */
 	public function permissions_check( $request ) {
 		// return current_user_can( 'manage_options' );
+		// Keep this public for now.
 		return true;
 	}
 
