@@ -31,6 +31,7 @@ You can also use the `[jeherve_ghactivity]` shortcode to display stats on the fr
 * Add option to monitor a repo fully, for all users on that repo.
 * Gather information about each person from GitHub.
 * Allow people to be assigned to a specific team. This will allow to build custom reports for groups of people.
+* Create API endpoint to fetch stats for repo events.
 
 = 1.5.0 =
 * Improve post content for each GitHub event.
