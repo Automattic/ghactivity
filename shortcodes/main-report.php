@@ -1,6 +1,10 @@
 <?php
 /**
- * Load a shortcode to display the whole thing on the frontend.
+ * Load a shortcode to display the main report on the frontend.
+ * Shortcode: jeherve_ghactivity
+ * One possible parameter: top_issues, boolean
+ *
+ * @package Ghactivity
  */
 
 add_shortcode( 'jeherve_ghactivity', 'jeherve_ghactivity_short_markup' );
