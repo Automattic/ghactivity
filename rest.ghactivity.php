@@ -33,7 +33,7 @@ class Ghactivity_Api {
 		 *
 		 * @since 1.6.0
 		 */
-		register_rest_route( 'ghactivity/v1', '/stats/repo/(?P<repo>[a-z\-]+)', array(
+		register_rest_route( 'ghactivity/v1', '/stats/repo/(?P<repo>[0-9a-z\-_]+)', array(
 			'methods'             => WP_REST_Server::READABLE,
 			'callback'            => array( $this, 'get_repo_stats' ),
 			'permission_callback' => array( $this, 'permissions_check' ),
