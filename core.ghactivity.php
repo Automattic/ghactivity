@@ -562,6 +562,7 @@ class GHActivity_Calls {
 					&& $actor
 					&& ! is_wp_error( $actor )
 				) {
+					// Get the person's name.
 					foreach ( $actor as $a ) {
 						$actor_name = esc_html( $a->name );
 					}
@@ -575,6 +576,12 @@ class GHActivity_Calls {
 						} else {
 							$count[ $actor_name ][ $term->slug ] = 1;
 						}
+
+						if ( isset( $count[ $actor_name ]['total'] ) ) {
+							$count[ $actor_name ]['total']++;
+						} else {
+							$count[ $actor_name ]['total'] = 1;
+						}
 					}
 				}
 			} else {
@@ -587,7 +594,7 @@ class GHActivity_Calls {
 						}
 					}
 				}
-			}
+			} // End if().
 
 			/**
 			 * Filter the final array of event types and matching counts after calculation.
@@ -600,10 +607,27 @@ class GHActivity_Calls {
 			 */
 			$count = apply_filters( 'ghactivity_count_posts_event_type_counts', $count, $query );
 
-		}
+		} // End while().
 		wp_reset_postdata();
 
+		// Sort the actors by total descending.
+		if ( true === $split_per_actor ) {
+			uasort( $count, array( 'GHActivity_Calls', 'sort_totals' ) );
+		}
+
 		return (array) $count;
+	}
+
+	/**
+	 * Custom function to sort our counts.
+	 *
+	 * @since 1.6.0
+	 *
+	 * @param int $a Total number of contributions.
+	 * @param int $b Total number of contributions.
+	 */
+	private static function sort_totals( $a, $b ) {
+		return $a['total'] < $b['total'];
 	}
 
 	/**
