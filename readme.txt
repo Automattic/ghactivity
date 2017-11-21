@@ -13,7 +13,7 @@ Monitor all your activity on GitHub, and posts reports about it on your WordPres
 
 If you find bugs, you can report them [here](http://wordpress.org/support/plugin/ghactivity), or submit a pull request [on GitHub](https://github.com/jeherve/ghactivity/).
 
-You can also use the `[jeherve_ghactivity]` shortcode to display stats on the frontend.
+You can also use the `[ghactivity]` shortcode to display stats on the frontend.
 
 == Installation ==
 
@@ -25,6 +25,9 @@ You can also use the `[jeherve_ghactivity]` shortcode to display stats on the fr
 == Frequently Asked Questions ==
 
 == Changelog ==
+
+= 2.0.0 =
+* Change the name of the shortcode from `jeherve_ghactivity` to `ghactivity`.
 
 = 1.6.0 =
 * Allow filtering of the people included in reports. This way one can create their own custom reports.

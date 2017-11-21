@@ -46,7 +46,7 @@ class GHActivity_Charts {
 				return;
 			}
 			foreach ( $GLOBALS['posts'] as $p ) {
-				if ( has_shortcode( $p->post_content, 'jeherve_ghactivity' ) ) {
+				if ( has_shortcode( $p->post_content, 'ghactivity' ) ) {
 					$this->_found_shortcode = true;
 					break;
 				}

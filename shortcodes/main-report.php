@@ -1,13 +1,13 @@
 <?php
 /**
  * Load a shortcode to display the main report on the frontend.
- * Shortcode: jeherve_ghactivity
+ * Shortcode: ghactivity
  * One possible parameter: top_issues, boolean
  *
  * @package Ghactivity
  */
 
-add_shortcode( 'jeherve_ghactivity', 'jeherve_ghactivity_short_markup' );
+add_shortcode( 'ghactivity', 'jeherve_ghactivity_short_markup' );
 
 /**
  * Get data for a custom report.
@@ -20,7 +20,7 @@ function jeherve_ghactivity_cust_report( $chart_data ) {
 
 	if (
 		empty( $post )
-		|| ! has_shortcode( $post->post_content, 'jeherve_ghactivity' )
+		|| ! has_shortcode( $post->post_content, 'ghactivity' )
 	) {
 		return $chart_data;
 	}
@@ -64,7 +64,7 @@ add_filter( 'ghactivity_chart_data', 'jeherve_ghactivity_cust_report' );
 function jeherve_ghactivity_short_markup( $atts ) {
 	$atts = shortcode_atts( array(
 		'top_issues' => false,
-	), $atts, 'jeherve_ghactivity' );
+	), $atts, 'ghactivity' );
 
 	$markup = sprintf(
 		'
