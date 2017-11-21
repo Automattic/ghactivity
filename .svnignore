@@ -1,3 +1,9 @@
 .git
 .gitignore
 .editorconfig
+/node_modules
+.DS_Store
+*.unison.tmp
+webpack.config.js
+_build/*.map
+npm-debug.log

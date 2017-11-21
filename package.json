@@ -1,0 +1,43 @@
+{
+	"name": "ghactivity",
+	"version": "2.0.0",
+	"description": "Build reports of all your GitHub activity. ",
+	"main": "ghactivity.php",
+	"scripts": {
+		"dev": "webpack --progress --colors --watch",
+		"build": "NODE_ENV=production webpack --progress --colors -p --config webpack.config.js"
+	},
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/jeherve/ghactivity.git"
+	},
+	"keywords": [
+		"wordpress",
+		"plugin",
+		"GitHub",
+		"log"
+	],
+	"author": "Jeremy Herve",
+	"license": "GPL-2.0+",
+	"bugs": {
+		"url": "https://github.com/jeherve/ghactivity/issues"
+	},
+	"homepage": "https://wordpress.org/plugins/ghactivity/",
+	"devDependencies": {
+		"babel-core": "^6.25.0",
+		"babel-loader": "^7.1.1",
+		"babel-preset-es2015": "^6.24.1",
+		"babel-preset-react": "^6.24.1",
+		"babel-preset-stage-1": "^6.24.1",
+		"eslint": "^4.3.0",
+		"eslint-config-wpcalypso": "^0.8.0",
+		"eslint-plugin-react": "^7.1.0",
+		"eslint-plugin-wpcalypso": "^3.4.0",
+		"webpack": "^3.2.0"
+	},
+	"dependencies": {
+		"prop-types": "^15.5.10",
+		"react": "^15.6.1",
+		"react-dom": "^15.6.1",
+	}
+}
