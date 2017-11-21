@@ -5,9 +5,9 @@ const webpackConfig = {
 	devtool: 'source-map',
 
 	entry: {
-		'js/admin': path.resolve(__dirname, 'app/admin.js'),
-		'js/shortcode': path.resolve(__dirname, 'app/shortcode.js'),
-		'js/widget': path.resolve(__dirname, 'app/widget.js'),
+		'shortcodes/repo-activity': path.resolve(__dirname, 'shortcodes/js/repo-activity.js'),
+		// 'shortcodes/main-report': path.resolve(__dirname, 'shortcodes/js/main-report.js'),
+		// 'shortcodes/team-activity': path.resolve(__dirname, 'shortcodes/js/team-activity.js'),
 	},
 
 	output: {

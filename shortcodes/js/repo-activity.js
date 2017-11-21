@@ -1,1 +1,13 @@
-console.log( ghactivity_repo_activity.api_url );
+import React from 'react';
+import { render } from 'react-dom';
+
+// Internal imports.
+import ActivityRepo from './components/ActivityRepo';
+
+render((
+	<ActivityRepo
+		repo={ghactivity_repo_activity.repo}
+		split_per_actor={ghactivity_repo_activity.split_per_actor}
+		period={ghactivity_repo_activity.period}
+	/>
+), document.querySelector( '#repo-activity' ) );

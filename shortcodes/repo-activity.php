@@ -1,9 +1,9 @@
 <?php
 /**
  * Load a shortcode to display activity from a specific repo.
- * Shortcode: jeherve_ghactivity_repo
+ * Shortcode: ghactivity_repo_stats
  * Parameters:
- * 		string $slug            Repo slug, must match an existing term in the ghactivity_repo taxonomy.
+ * 		string $repo            Repo slug, must match an existing term in the ghactivity_repo taxonomy.
  *		bool   $split_per_actor Should we display stats per actor or overall stats for the repo? Default to true.
  *		string $period          When do we want the data from? 4 options: `today`, `week`, `month`, `all`. Default to `all`.
  *
@@ -12,7 +12,7 @@
 
 defined( 'ABSPATH' ) || die( 'No script kiddies please!' );
 
-add_shortcode( 'jeherve_ghactivity_repo', 'jeherve_ghactivity_repo_report' );
+add_shortcode( 'ghactivity_repo_stats', 'jeherve_ghactivity_repo_report' );
 
 /**
  * Return our report table.
@@ -23,17 +23,17 @@ add_shortcode( 'jeherve_ghactivity_repo', 'jeherve_ghactivity_repo_report' );
  */
 function jeherve_ghactivity_repo_report( $atts ) {
 	$atts = shortcode_atts( array(
-		'slug'            => '',
+		'repo'            => '',
 		'split_per_actor' => true,
 		'period'          => 'all',
-	), $atts, 'jeherve_ghactivity_repo' );
+	), $atts, 'ghactivity_repo_stats' );
 
 	/**
 	 * Enqueue JavaScript.
 	 */
 	wp_register_script(
 		'ghactivity-repo-activity',
-		plugins_url( 'js/repo-activity.js', __FILE__ ),
+		plugins_url( '_build/shortcodes/repo-activity.js', dirname( __FILE__ ) ),
 		array(),
 		GHACTIVITY__VERSION
 	);
@@ -41,11 +41,12 @@ function jeherve_ghactivity_repo_report( $atts ) {
 		'api_url'                => esc_url_raw( rest_url() ),
 		'site_url'               => esc_url_raw( home_url() ),
 		'api_nonce'              => wp_create_nonce( 'wp_rest' ),
+		'repo'                   => esc_attr( $atts['repo'] ),
+		'split_per_actor'        => (bool) $atts['split_per_actor'],
+		'period'                 => esc_attr( $atts['period'] ),
 	);
 	wp_localize_script( 'ghactivity-repo-activity', 'ghactivity_repo_activity', $traktivity_dash_args );
 	wp_enqueue_script( 'ghactivity-repo-activity' );
 
-	$markup = '';
-
-	return $markup;
+	return '<div id="repo-activity"></div>';
 }
