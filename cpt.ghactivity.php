@@ -40,7 +40,12 @@ function ghactivity_register_post_type() {
 			'pages'                 => true,
 		),
 		'supports'              => array( 'title', 'editor', 'wpcom-markdown' ),
-		'taxonomies'            => array( 'event_type', 'repo' ),
+		'taxonomies'            => array(
+			'ghactivity_event_type',
+			'ghactivity_repo',
+			'ghactivity_actor',
+			'ghactivity_team',
+		),
 		'hierarchical'          => false,
 		'public'                => true,
 		'show_ui'               => true,
@@ -368,6 +373,20 @@ function ghactivity_person_columns( $columns ) {
 add_filter( 'manage_edit-ghactivity_actor_columns', 'ghactivity_person_columns' );
 
 /**
+ * Remove the "Team" column in the GitHub Events main screen.
+ *
+ * @since 2.0.0
+ *
+ * @param string $columns Columns.
+ */
+function ghactivity_event_custom_posts_columns( $columns ) {
+	unset( $columns['taxonomy-ghactivity_team'] );
+
+	return $columns;
+}
+add_filter( 'manage_ghactivity_event_posts_columns', 'ghactivity_event_custom_posts_columns' );
+
+/**
  * Display the team in the new column we created in the Person admin page.
  *
  * @since 1.6.0
@@ -463,3 +482,170 @@ function ghactivity_actor_team_save_field( $term_id ) {
 	}
 }
 add_action( 'edit_ghactivity_actor', 'ghactivity_actor_team_save_field' );
+
+/**
+ * Register Issues CPT and its taxonomies to keep track of issues per repo.
+ *
+ * @since 2.0.0
+ */
+function ghactivity_register_issues_post_type() {
+	register_post_type( 'ghactivity_issue', array(
+		'label'                 => __( 'GitHub Issues', 'ghactivity' ),
+		'description'           => __( 'GitHub Issue', 'ghactivity' ),
+		'labels'                => array(
+			'name'                  => _x( 'GitHub Issues', 'Post Type General Name', 'ghactivity' ),
+			'singular_name'         => _x( 'GitHub Issue', 'Post Type Singular Name', 'ghactivity' ),
+			'menu_name'             => __( 'GitHub Issues', 'ghactivity' ),
+			'name_admin_bar'        => __( 'GitHub Issue', 'ghactivity' ),
+			'archives'              => __( 'Issues Archives', 'ghactivity' ),
+			'all_items'             => __( 'All GitHub Issues', 'ghactivity' ),
+			'add_new_item'          => __( 'Add New Issues', 'ghactivity' ),
+			'add_new'               => __( 'Add New', 'ghactivity' ),
+			'new_item'              => __( 'New Issue', 'ghactivity' ),
+			'edit_item'             => __( 'Edit Issue', 'ghactivity' ),
+			'update_item'           => __( 'Update Issue', 'ghactivity' ),
+			'view_item'             => __( 'View Issue', 'ghactivity' ),
+			'search_items'          => __( 'Search Issue', 'ghactivity' ),
+		),
+		'rewrite'               => array(
+			'slug'                  => 'github_issue',
+			'with_front'            => false,
+			'feeds'                 => true,
+			'pages'                 => true,
+		),
+		'supports'              => array( 'title', 'editor', 'wpcom-markdown' ),
+		'taxonomies'            => array(
+			'ghactivity_issues_state',
+			'ghactivity_issues_labels',
+			'ghactivity_repo',
+			'ghactivity_actor',
+			'ghactivity_issues_type',
+		),
+		'hierarchical'          => false,
+		'public'                => true,
+		'show_ui'               => true,
+		'show_in_menu'          => true,
+		'menu_position'         => 20,
+		'show_in_admin_bar'     => true,
+		'show_in_nav_menus'     => true,
+		'can_export'            => true,
+		'has_archive'           => true,
+		'exclude_from_search'   => false,
+		'publicly_queryable'    => true,
+		'capability_type'       => 'page',
+		'menu_icon'             => 'dashicons-info',
+		'show_in_rest'          => true,
+	) );
+
+	/**
+	 * Register State Taxonomy.
+	 *
+	 * @since 2.0.0
+	 */
+	register_taxonomy( 'ghactivity_issues_state', array( 'ghactivity_issue' ), array(
+		'labels'                     => array(
+			'name'                       => _x( 'State', 'Taxonomy General Name', 'ghactivity' ),
+			'singular_name'              => _x( 'State', 'Taxonomy Singular Name', 'ghactivity' ),
+			'menu_name'                  => __( 'State', 'ghactivity' ),
+			'all_items'                  => __( 'All states', 'ghactivity' ),
+			'parent_item'                => __( 'Parent Item', 'ghactivity' ),
+			'parent_item_colon'          => __( 'Parent Item:', 'ghactivity' ),
+			'new_item_name'              => __( 'New State Name', 'ghactivity' ),
+			'add_new_item'               => __( 'Add New State', 'ghactivity' ),
+			'edit_item'                  => __( 'Edit State', 'ghactivity' ),
+			'update_item'                => __( 'Update State', 'ghactivity' ),
+			'view_item'                  => __( 'View State', 'ghactivity' ),
+			'separate_items_with_commas' => __( 'Separate items with commas', 'ghactivity' ),
+			'add_or_remove_items'        => __( 'Add or remove items', 'ghactivity' ),
+			'choose_from_most_used'      => __( 'Choose from the most used', 'ghactivity' ),
+			'popular_items'              => __( 'Popular Items', 'ghactivity' ),
+			'search_items'               => __( 'Search Items', 'ghactivity' ),
+			'not_found'                  => __( 'Not Found', 'ghactivity' ),
+			'no_terms'                   => __( 'No items', 'ghactivity' ),
+			'items_list'                 => __( 'Items list', 'ghactivity' ),
+			'items_list_navigation'      => __( 'Items list navigation', 'ghactivity' ),
+		),
+		'hierarchical'               => false,
+		'public'                     => true,
+		'show_ui'                    => true,
+		'show_admin_column'          => true,
+		'show_in_nav_menus'          => true,
+		'show_tagcloud'              => true,
+		'show_in_rest'               => true,
+	) );
+
+	/**
+	 * Register Labels Taxonomy.
+	 *
+	 * @since 2.0.0
+	 */
+	register_taxonomy( 'ghactivity_issues_labels', array( 'ghactivity_issue' ), array(
+		'labels'                     => array(
+			'name'                       => _x( 'Labels', 'Taxonomy General Name', 'ghactivity' ),
+			'singular_name'              => _x( 'Label', 'Taxonomy Singular Name', 'ghactivity' ),
+			'menu_name'                  => __( 'Labels', 'ghactivity' ),
+			'all_items'                  => __( 'All Labels', 'ghactivity' ),
+			'parent_item'                => __( 'Parent Item', 'ghactivity' ),
+			'parent_item_colon'          => __( 'Parent Item:', 'ghactivity' ),
+			'new_item_name'              => __( 'New Label Name', 'ghactivity' ),
+			'add_new_item'               => __( 'Add New Label', 'ghactivity' ),
+			'edit_item'                  => __( 'Edit Label', 'ghactivity' ),
+			'update_item'                => __( 'Update Label', 'ghactivity' ),
+			'view_item'                  => __( 'View Label', 'ghactivity' ),
+			'separate_items_with_commas' => __( 'Separate items with commas', 'ghactivity' ),
+			'add_or_remove_items'        => __( 'Add or remove items', 'ghactivity' ),
+			'choose_from_most_used'      => __( 'Choose from the most used', 'ghactivity' ),
+			'popular_items'              => __( 'Popular Items', 'ghactivity' ),
+			'search_items'               => __( 'Search Items', 'ghactivity' ),
+			'not_found'                  => __( 'Not Found', 'ghactivity' ),
+			'no_terms'                   => __( 'No items', 'ghactivity' ),
+			'items_list'                 => __( 'Items list', 'ghactivity' ),
+			'items_list_navigation'      => __( 'Items list navigation', 'ghactivity' ),
+		),
+		'hierarchical'               => false,
+		'public'                     => true,
+		'show_ui'                    => true,
+		'show_admin_column'          => true,
+		'show_in_nav_menus'          => true,
+		'show_tagcloud'              => true,
+		'show_in_rest'               => true,
+	) );
+
+	/**
+	 * Register Type Taxonomy. Issue or Pull Request.
+	 *
+	 * @since 2.0.0
+	 */
+	register_taxonomy( 'ghactivity_issues_type', array( 'ghactivity_issue' ), array(
+		'labels'                     => array(
+			'name'                       => _x( 'Type', 'Taxonomy General Name', 'ghactivity' ),
+			'singular_name'              => _x( 'Type', 'Taxonomy Singular Name', 'ghactivity' ),
+			'menu_name'                  => __( 'Type', 'ghactivity' ),
+			'all_items'                  => __( 'All Types', 'ghactivity' ),
+			'parent_item'                => __( 'Parent Item', 'ghactivity' ),
+			'parent_item_colon'          => __( 'Parent Item:', 'ghactivity' ),
+			'new_item_name'              => __( 'New Type Name', 'ghactivity' ),
+			'add_new_item'               => __( 'Add New Type', 'ghactivity' ),
+			'edit_item'                  => __( 'Edit Type', 'ghactivity' ),
+			'update_item'                => __( 'Update Type', 'ghactivity' ),
+			'view_item'                  => __( 'View Type', 'ghactivity' ),
+			'separate_items_with_commas' => __( 'Separate items with commas', 'ghactivity' ),
+			'add_or_remove_items'        => __( 'Add or remove items', 'ghactivity' ),
+			'choose_from_most_used'      => __( 'Choose from the most used', 'ghactivity' ),
+			'popular_items'              => __( 'Popular Items', 'ghactivity' ),
+			'search_items'               => __( 'Search Items', 'ghactivity' ),
+			'not_found'                  => __( 'Not Found', 'ghactivity' ),
+			'no_terms'                   => __( 'No items', 'ghactivity' ),
+			'items_list'                 => __( 'Items list', 'ghactivity' ),
+			'items_list_navigation'      => __( 'Items list navigation', 'ghactivity' ),
+		),
+		'hierarchical'               => false,
+		'public'                     => true,
+		'show_ui'                    => true,
+		'show_admin_column'          => true,
+		'show_in_nav_menus'          => true,
+		'show_tagcloud'              => true,
+		'show_in_rest'               => true,
+	) );
+}
+add_action( 'init', 'ghactivity_register_issues_post_type', 0 );
