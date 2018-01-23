@@ -420,7 +420,6 @@ class GHActivity_Calls {
 
 				// If no post exists with that ID, let's go on and publish a post.
 				if ( is_null( get_page_by_title( $event->id, OBJECT, 'ghactivity_event' ) ) ) {
-
 					// Store the number of commits attached to the event in post meta.
 					if ( 'PushEvent' == $event->type ) {
 						$meta = array( '_github_commits' => absint( $event->payload->distinct_size ) );
@@ -453,6 +452,79 @@ class GHActivity_Calls {
 						);
 					}
 
+					/**
+					 * Small interlude: let's record info in the ghactivity_issue CPT
+					 * if the event is about an issue or PR.
+					 */
+					if (
+						(
+							'PullRequestEvent' === $event->type
+							|| 'IssuesEvent' === $event->type
+							|| 'IssueCommentEvent' === $event->type
+							|| 'PullRequestReviewCommentEvent' === $event->type
+						)
+						&& (
+							! empty( $event->payload->issue )
+							|| ! empty( $event->payload->pull_request )
+						)
+						&& (
+							in_array(
+								$event->repo->name,
+								/**
+								 * Allow site owners to only log issues for specific repos.
+								 *
+								 * @since 2.0.0
+								 *
+								 * @param array $repos Array of repos for which we want to monitor events.
+								 */
+								apply_filters( 'ghactivity_issues_repo_to_monitor', $this->get_monitored_repos( 'names' ) )
+							)
+						)
+					) {
+						// Is it an issue or a PR?
+						if ( ! empty( $event->payload->pull_request ) ) {
+							$issue_type = 'pull_request';
+							$title      = esc_html( $event->payload->pull_request->title );
+							$labels     = ( isset( $event->payload->pull_request->labels ) ? $this->get_label_names( $event->payload->pull_request->labels ) : array() );
+							$number     = $event->payload->number;
+						} else {
+							$issue_type = 'issue';
+							$title      = esc_html( $event->payload->issue->title );
+							$labels     = ( isset( $event->payload->issue->labels ) ? $this->get_label_names( $event->payload->issue->labels ) : array() );
+							$number     = $event->payload->issue->number;
+						}
+
+						/**
+						 * Specify a creator when an issue or PR is opened.
+						 * Favorize display_login when possible.
+						 */
+						if ( 'opened' === $event->payload->action ) {
+							$creator = esc_html( $event->actor->display_login );
+						} elseif ( ! empty( $event->payload->pull_request ) ) {
+							$creator = esc_html( $event->payload->pull_request->user->login );
+						} elseif ( ! empty( $event->payload->issue ) ) {
+							$creator = esc_html( $event->payload->issue->user->login );
+						} else {
+							$creator = '';
+						}
+
+						// Record event.
+						$issue_details = array(
+							'type'       => $issue_type,
+							'event_type' => $taxonomies['ghactivity_event_type'],
+							'created_at' => $event->created_at,
+							'number'     => ( ! empty( $number ) ? absint( $number ) : 0 ),
+							'repo_name'  => esc_html( $event->repo->name ),
+							'state'      => ( isset( $event->payload->state ) ? esc_html( $event->payload->state ) : 'open' ),
+							'title'      => $title,
+							'comments'   => ( isset( $event->payload->comments ) ? $event->payload->comments : 0 ),
+							'creator'    => $creator,
+							'labels'     => $labels,
+						);
+						$this->record_issue_details( $issue_details );
+					}
+
+					// Finally, publish our event.
 					$event_args = array(
 						'post_title'   => $event->id,
 						'post_type'    => 'ghactivity_event',
@@ -508,6 +580,146 @@ class GHActivity_Calls {
 				}
 			}
 		}
+	}
+
+	/**
+	 * Record data about each one of our issues in the ghactivity_issue CPT.
+	 *
+	 * @since 2.0.0
+	 *
+	 * @param array $issue_details {
+	 * 	Array of information about the issue.
+	 * 		@type string $type       issue or pull_request.
+	 * 		@type string $event_type What kind of event was this.
+	 * 		@type string created_at  When did this happen.
+	 * 		@type int    $number     Issue Number.
+	 * 		@type string $repo_name  Repo name.
+	 * 		@type string $state      Issue state (open or closed).
+	 * 		@type string $title      Issue title.
+	 * 		@type int    $comments   Number of comments on the issue.
+	 * 		@type string $creator    Issue creator.
+	 * 		@type array  $labels     Array of labels for that issue.
+	 * }
+	 */
+	private function record_issue_details( $issue_details ) {
+		/**
+		 * Create a new post if that issue does not exist yet.
+		 * Update the post if not.
+		 * We make a WP_Query and set $is_new to help us figure this out.
+		 */
+		$is_new_args = array(
+			'post_type'      => 'ghactivity_issue',
+			'post_status'    => 'publish',
+			'posts_per_page' => 1,
+			'tax_query'      => array(
+				array(
+					'taxonomy' => 'ghactivity_repo',
+					'field'    => 'name',
+					'terms'    => $issue_details['repo_name'],
+				),
+			),
+			'meta_query' => array(
+				array(
+					'key'     => 'number',
+					'value'   => $issue_details['number'],
+					'compare' => '=',
+				),
+			),
+		);
+		$query = new WP_Query( $is_new_args );
+		if ( $query->have_posts() ) {
+			$query->the_post();
+
+			$is_new = false;
+			$post_id = $query->post->ID;
+		} else {
+			$is_new = true;
+		}
+		wp_reset_postdata();
+
+		if ( $is_new ) {
+			// Create taxonomies.
+			$taxonomies = array(
+				'ghactivity_repo'          => $issue_details['repo_name'],
+				'ghactivity_actor'         => $issue_details['creator'],
+				'ghactivity_issues_state'  => $issue_details['state'],
+				'ghactivity_issues_labels' => $issue_details['labels'],
+				'ghactivity_issues_type'   => $issue_details['type'],
+			);
+
+			$meta = array(
+				'number'   => absint( $issue_details['number'] ),
+				'comments' => $issue_details['comments'],
+			);
+
+			$post_content = sprintf(
+				'<ul>
+					<li><a href="https://github.com/%1$s/issues/%2$s">%3$s</a></li>
+					<li>%4$s %5$s</li>
+					<li>Comments: %6$s</li>
+				</ul>',
+				esc_attr( $issue_details['repo_name'] ),
+				absint( $issue_details['number'] ),
+				esc_html__( 'View original issue.', 'ghactivity' ),
+				esc_html__( 'Labels:', 'ghactivity' ),
+				implode( ', ', $issue_details['labels'] ),
+				absint( $issue_details['number'] )
+			);
+			$issue_args = array(
+				'post_title'   => $issue_details['title'],
+				'post_type'    => 'ghactivity_issue',
+				'post_status'  => 'publish',
+				'post_date'    => $issue_details['created_at'],
+				'tax_input'    => $taxonomies,
+				'meta_input'   => $meta,
+				'post_content' => $post_content,
+			);
+			$post_id = wp_insert_post( $issue_args );
+
+			/**
+			 * Establish the relationship between terms and taxonomies.
+			 */
+			foreach ( $taxonomies as $taxonomy => $value ) {
+				$term_taxonomy_ids = wp_set_object_terms( $post_id, $value, $taxonomy, true );
+			}
+		} else {
+			$taxonomies = array(
+				'ghactivity_issues_state'  => $issue_details['state'],
+				'ghactivity_issues_labels' => $issue_details['labels'],
+			);
+			$meta = array(
+				'comments' => $issue_details['comments'],
+			);
+			$post_content = sprintf(
+				'<ul>
+					<li><a href="https://github.com/%1$s/issues/%2$s">%3$s</a></li>
+					<li>%4$s %5$s</li>
+					<li>Comments: %6$s</li>
+				</ul>',
+				esc_attr( $issue_details['repo_name'] ),
+				absint( $issue_details['number'] ),
+				esc_html__( 'View original issue.', 'ghactivity' ),
+				esc_html__( 'Labels:', 'ghactivity' ),
+				implode( ', ', $issue_details['labels'] ),
+				absint( $issue_details['number'] )
+			);
+
+			$issue_args = array(
+				'ID'           => $post_id,
+				'post_title'   => $issue_details['title'],
+				'meta_input'   => $meta,
+				'tax_input'    => $taxonomies,
+				'post_content' => $post_content,
+			);
+			wp_update_post( $issue_args );
+
+			/**
+			 * Establish the relationship between terms and taxonomies.
+			 */
+			foreach ( $taxonomies as $taxonomy => $value ) {
+				$term_taxonomy_ids = wp_set_object_terms( $post_id, $value, $taxonomy, true );
+			}
+		} // End if() $is_new.
 	}
 
 	/**
