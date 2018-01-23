@@ -82,37 +82,12 @@ class GHActivity_Calls {
 			$response_body = array_merge( $single_response_body, $response_body );
 		}
 
-		/**
-		 * Get an array of repos we want to follow a bit more closely.
-		 * For those repos we will log activity from everyone,
-		 * not just from the usernames set in the plugin options.
-		 *
-		 * We will select all repos from the ghactivity_repo taxonomy,
-		 * and monitor all those that have the `full_reporting` term meta set to true.
-		 */
-		$repos_query_args = array(
-			'taxonomy'   => 'ghactivity_repo',
-			'hide_empty' => false,
-			'number'     => 10, // Just to make sure we don't get rate-limited by GH.
-			'fields'     => 'id=>name',
-			'meta_query' => array(
-				array(
-					'key'     => 'full_reporting',
-					'value'   => true,
-					'compare' => '='
-				),
-			),
-		);
-		$repos_to_monitor = get_terms( $repos_query_args );
-
 		// If we have repos to watch, let's get data for them.
-		if (
-			! is_wp_error( $repos_to_monitor )
-			&& is_array( $repos_to_monitor )
-			&& ! empty( $repos_to_monitor )
-		) {
-			foreach ( $repos_to_monitor as $id => $name ) {
-				$repo_activity = $this->get_repo_activity( $name );
+		$repos_to_monitor = $this->get_monitored_repos( 'names' );
+		if ( ! empty( $repos_to_monitor ) ) {
+			foreach ( $repos_to_monitor as $repo ) {
+				$repo_activity = $this->get_repo_activity( $repo );
+				// If we got data from those repos, add it to the existing list of events.
 				if ( isset( $repo_activity ) && is_array( $repo_activity ) ) {
 					$response_body = array_merge( $repo_activity, $response_body );
 				}
@@ -213,6 +188,75 @@ class GHActivity_Calls {
 		);
 
 		return $gh_user_details;
+	}
+
+	/**
+	 * Generate array of labels from multidimensional array.
+	 * Utility function.
+	 *
+	 * @since 2.0.0
+	 *
+	 * @param array $labels Array of labels and their details as provided by GitHub.
+	 *
+	 * @return array $label_names Array of label names.
+	 */
+	private function get_label_names( $labels = array() ) {
+		$label_names = array();
+
+		if ( ! empty( $labels ) ) {
+			foreach ( $labels as $label ) {
+				$label_names[] = esc_html( $label->name );
+			}
+		}
+
+		return $label_names;
+	}
+
+	/**
+	 * Get an array of repos we want to follow a bit more closely.
+	 * For those repos we will log activity from everyone,
+	 * not just from the usernames set in the plugin options.
+	 *
+	 * We will select all repos from the ghactivity_repo taxonomy,
+	 * and monitor all those that have the `full_reporting` term meta set to true.
+	 *
+	 * @since 2.0.0
+	 *
+	 * @param string $fields Type of info to return. Accept full or names. Default to full.
+	 *
+	 * @return WP_Error|array $repos_to_monitor Array of repos to monitor.
+	 */
+	private function get_monitored_repos( $fields = 'full' ) {
+		$repos_query_args = array(
+			'taxonomy'   => 'ghactivity_repo',
+			'hide_empty' => false,
+			'number'     => 10, // Just to make sure we don't get rate-limited by GH.
+			'fields'     => 'id=>name',
+			'meta_query' => array(
+				array(
+					'key'     => 'full_reporting',
+					'value'   => true,
+					'compare' => '=',
+				),
+			),
+		);
+		$repos_to_monitor = get_terms( $repos_query_args );
+
+		if ( 'full' === $fields ) {
+			return $repos_to_monitor;
+		} else {
+			$repo_names = array();
+			if (
+				! is_wp_error( $repos_to_monitor )
+				&& is_array( $repos_to_monitor )
+				&& ! empty( $repos_to_monitor )
+			) {
+				foreach ( $repos_to_monitor as $id => $name ) {
+					$repo_names[] = $name;
+				}
+			}
+			return $repo_names;
+		}
 	}
 
 	/**
