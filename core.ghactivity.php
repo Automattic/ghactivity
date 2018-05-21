@@ -484,11 +484,15 @@ class GHActivity_Calls {
 						// Is it an issue or a PR?
 						if ( ! empty( $event->payload->pull_request ) ) {
 							$issue_type = 'pull_request';
+							$created_at = $event->payload->pull_request->created_at;
+							$state      = $event->payload->pull_request->state;
 							$title      = esc_html( $event->payload->pull_request->title );
 							$labels     = ( isset( $event->payload->pull_request->labels ) ? $this->get_label_names( $event->payload->pull_request->labels ) : array() );
-							$number     = $event->payload->number;
+							$number     = $event->payload->pull_request->number;
 						} else {
 							$issue_type = 'issue';
+							$created_at = $event->payload->issue->created_at;
+							$state      = $event->payload->issue->state;
 							$title      = esc_html( $event->payload->issue->title );
 							$labels     = ( isset( $event->payload->issue->labels ) ? $this->get_label_names( $event->payload->issue->labels ) : array() );
 							$number     = $event->payload->issue->number;
@@ -512,10 +516,10 @@ class GHActivity_Calls {
 						$issue_details = array(
 							'type'       => $issue_type,
 							'event_type' => $taxonomies['ghactivity_event_type'],
-							'created_at' => $event->created_at,
+							'created_at' => $created_at,
 							'number'     => ( ! empty( $number ) ? absint( $number ) : 0 ),
 							'repo_name'  => esc_html( $event->repo->name ),
-							'state'      => ( isset( $event->payload->state ) ? esc_html( $event->payload->state ) : 'open' ),
+							'state'      => ( isset( $state ) ? esc_html( $state ) : 'open' ),
 							'title'      => $title,
 							'comments'   => ( isset( $event->payload->comments ) ? $event->payload->comments : 0 ),
 							'creator'    => $creator,
@@ -649,7 +653,7 @@ class GHActivity_Calls {
 
 			$meta = array(
 				'number'   => absint( $issue_details['number'] ),
-				'comments' => $issue_details['comments'],
+				'comments' => absint( $issue_details['comments'] ),
 			);
 
 			$post_content = sprintf(
@@ -663,7 +667,7 @@ class GHActivity_Calls {
 				esc_html__( 'View original issue.', 'ghactivity' ),
 				esc_html__( 'Labels:', 'ghactivity' ),
 				implode( ', ', $issue_details['labels'] ),
-				absint( $issue_details['number'] )
+				absint( $issue_details['comments'] )
 			);
 			$issue_args = array(
 				'post_title'   => $issue_details['title'],
@@ -688,7 +692,8 @@ class GHActivity_Calls {
 				'ghactivity_issues_labels' => $issue_details['labels'],
 			);
 			$meta = array(
-				'comments' => $issue_details['comments'],
+				'number'   => absint( $issue_details['number'] ),
+				'comments' => absint( $issue_details['comments'] ),
 			);
 			$post_content = sprintf(
 				'<ul>
@@ -701,7 +706,7 @@ class GHActivity_Calls {
 				esc_html__( 'View original issue.', 'ghactivity' ),
 				esc_html__( 'Labels:', 'ghactivity' ),
 				implode( ', ', $issue_details['labels'] ),
-				absint( $issue_details['number'] )
+				absint( $issue_details['comments'] )
 			);
 
 			$issue_args = array(
@@ -717,7 +722,7 @@ class GHActivity_Calls {
 			 * Establish the relationship between terms and taxonomies.
 			 */
 			foreach ( $taxonomies as $taxonomy => $value ) {
-				$term_taxonomy_ids = wp_set_object_terms( $post_id, $value, $taxonomy, true );
+				$term_taxonomy_ids = wp_set_object_terms( $post_id, $value, $taxonomy, false );
 			}
 		} // End if() $is_new.
 	}
