@@ -70,7 +70,7 @@ function jeherve_ghactivity_short_markup( $atts ) {
 		'
 		<p>From %1$s until %2$s:</p>
 		<div id="canvas-holder">
-			<canvas id="chart-area-ghactivity_widget-1"/>
+			<canvas id="chart-area-admin"/>
 		</div>
 		<ul id="ghactivity_admin_report"></ul>
 		',
@@ -78,14 +78,9 @@ function jeherve_ghactivity_short_markup( $atts ) {
 		date_i18n( get_option( 'date_format' ), strtotime( date( 'Y-m-d' ) ) )
 	);
 
-	// Get a list of Top Issues.
-	$top_issues = get_transient( 'ghactivity_top_issues' );
-
-	if (
-		false != $top_issues
-		&& 'true' === $atts['top_issues']
-	) {
-		$markup .= $top_issues;
+	if ( 'true' === $atts['top_issues'] ) {
+		// Get a list of Top Issues.
+		$markup .= GHActivity_Reports::popular_issues_markup( false );
 	}
 
 	/**

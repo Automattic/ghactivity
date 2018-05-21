@@ -138,9 +138,11 @@ class GHActivity_Reports {
 	 *
 	 * @since 1.4.0
 	 *
+	 * bool $echo Should the markup be echoed or not. Default to true.
+	 *
 	 * @echo null|string $pop_report HTML markup for our report. Ordered list.
 	 */
-	public function popular_issues_markup( $number ) {
+	public static function popular_issues_markup( $echo = true ) {
 		$options = (array) get_option( 'ghactivity' );
 
 		// Check if we have info about a repo or more.
@@ -257,7 +259,11 @@ class GHActivity_Reports {
 			$issues_markup = $data_from_cache;
 		}
 
-		echo $issues_markup;
+		if ( $echo ) {
+			echo $issues_markup;
+		} else {
+			return $issues_markup;
+		}
 	}
 }
 new GHActivity_Reports();
