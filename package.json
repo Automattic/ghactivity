@@ -1,6 +1,6 @@
 {
 	"name": "ghactivity",
-	"version": "2.0.0",
+	"version": "2.0.0-alpha",
 	"description": "Build reports of all your GitHub activity. ",
 	"main": "ghactivity.php",
 	"scripts": {
