@@ -41,6 +41,7 @@ function ghactivity_team_shortcode( $atts ) {
 	/**
 	 * Build a basic report of what happened for this team in the past week.
 	 */
+	// Replace the below by what is already in get_main_report_data.
 
 	// Action count during the past week.
 	$date_end = esc_attr( date( 'Y-m-d' ) );
@@ -107,7 +108,8 @@ function ghactivity_team_shortcode( $atts ) {
 	$report .= '<ul>';
 	foreach ( $team as $name ) {
 		$report .= sprintf(
-			'<li><a href="http://jeherve.wpsandbox.me/ghactivity_actor/%1$s">%1$s</a></li>',
+			'<li><a href="%1$s/ghactivity_actor/%2$s">%2$s</a></li>',
+			get_home_url(),
 			esc_attr( $name )
 		);
 	}
