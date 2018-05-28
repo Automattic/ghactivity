@@ -43,8 +43,16 @@ function ghactivity_team_shortcode( $atts ) {
 	 */
 	$date_end   = esc_attr( date( 'Y-m-d' ) );
 	$date_start = esc_attr( date( 'Y-m-d', strtotime( '-1 week' ) ) );
+	/**
+	 * Filter the reports used for the team reports.
+	 *
+	 * @since 2.0.0
+	 *
+	 * @param string|array $repo Get stats for a specific GitHub repo, or a list of repos. Default to an empty string, all repos.
+	 */
+	$repo = apply_filters( 'ghactivity_team_report_repo_to_monitor', '' );
 
-	$action_count = GHActivity_Calls::get_summary_counts( $date_start, $date_end, $team, '', false );
+	$action_count = GHActivity_Calls::get_summary_counts( $date_start, $date_end, $team, $repo, false );
 
 	$report = sprintf(
 		'<header class="page-header"><h2>%s</h2>',
