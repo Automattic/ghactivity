@@ -64,43 +64,7 @@ class GHActivity_Reports {
 		 */
 		$dates = apply_filters( 'ghactivity_main_report_dates', $dates );
 
-		// Action count during that period.
-		$action_count = GHActivity_Calls::count_posts_per_event_type( $dates['date_start'], $dates['date_end'], $people, $repo, false );
-
-		// Remove all actions with a count of 0. We won't need to display them.
-		$action_count = array_filter( $action_count );
-
-		/**
-		 * Let's loop through our array of actions taken,
-		 * and replace the taxonomy slugs used when counting posts by the taxonomy names, better for display.
-		 */
-		foreach( $action_count as $type => $count ) {
-			// Get the pretty name for each taxonomy
-			$tax_info = get_term_by( 'slug', $type, 'ghactivity_event_type' );
-			$type_name = $tax_info->name;
-
-			// Add the new pretty names to the array, matching them to their value.
-			$action_count[ $type_name ] = $count;
-
-			// Remove the old array key.
-			unset( $action_count[ $type ] );
-		}
-
-		/**
-		 * Add number of commits to the report.
-		 */
-		$commit_count = GHActivity_Calls::count_commits( $dates['date_start'], $dates['date_end'], '' );
-
-		$commits_key = __( 'Committed', 'ghactivity' );
-		$action_count[ $commits_key ] = (int) $commit_count;
-
-		/**
-		 * Add number of repos to the report.
-		 */
-		$repos_count = GHActivity_Calls::count_repos( $dates['date_start'], $dates['date_end'], '' );
-
-		$repos_key = __( 'Projects', 'ghactivity' );
-		$action_count[ $repos_key ] = (int) $repos_count;
+		$action_count = GHActivity_Calls::get_summary_counts( $dates['date_start'], $dates['date_end'], $people, $repo, false );
 
 		$chart_data = GHActivity_Charts::get_action_chart_data( $action_count );
 

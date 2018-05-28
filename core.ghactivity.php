@@ -1034,5 +1034,59 @@ class GHActivity_Calls {
 
 		return (int) count( $repos );
 	}
+
+	/**
+	 * Get summary report.
+	 * for a given person / list of people, on specific dates, for all repos or just a specific one.
+	 *
+	 * @param string       $date_start      Starting date range, using a strtotime compatible format.
+	 * @param string       $date_end        End date range, using a strtotime compatible format.
+	 * @param string       $person          Get stats for a specific GitHub username.
+	 * @param string|array $repo            Get stats for a specific GitHub repo, or a list of repos.
+	 * @param bool         $split_per_actor Split counts per actor.
+	 *
+	 * @return $count      Array of count of actions and info about person/repo.
+	 */
+	public static function get_summary_counts( $date_start, $date_end, $person = '', $repo, $split_per_actor = false ) {
+		// Action count during that period.
+		$action_count = self::count_posts_per_event_type( $date_start, $date_end, $person, $repo, $split_per_actor );
+
+		// Remove all actions with a count of 0. We won't need to display them.
+		$action_count = array_filter( $action_count );
+
+		/**
+		 * Let's loop through our array of actions taken,
+		 * and replace the taxonomy slugs used when counting posts by the taxonomy names, better for display.
+		 */
+		foreach( $action_count as $type => $count ) {
+			// Get the pretty name for each taxonomy
+			$tax_info = get_term_by( 'slug', $type, 'ghactivity_event_type' );
+			$type_name = $tax_info->name;
+
+			// Add the new pretty names to the array, matching them to their value.
+			$action_count[ $type_name ] = $count;
+
+			// Remove the old array key.
+			unset( $action_count[ $type ] );
+		}
+
+		/**
+		 * Add number of commits to the report.
+		 */
+		$commit_count = self::count_commits( $date_start, $date_end, $person );
+
+		$commits_key = __( 'Committed', 'ghactivity' );
+		$action_count[ $commits_key ] = (int) $commit_count;
+
+		/**
+		 * Add number of repos to the report.
+		 */
+		$repos_count = self::count_repos( $date_start, $date_end, $person );
+
+		$repos_key = __( 'Projects', 'ghactivity' );
+		$action_count[ $repos_key ] = (int) $repos_count;
+
+		return $action_count;
+	}
 }
 new GHActivity_Calls();

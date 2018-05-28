@@ -41,49 +41,10 @@ function ghactivity_team_shortcode( $atts ) {
 	/**
 	 * Build a basic report of what happened for this team in the past week.
 	 */
-	// Replace the below by what is already in get_main_report_data.
-
-	// Action count during the past week.
-	$date_end = esc_attr( date( 'Y-m-d' ) );
+	$date_end   = esc_attr( date( 'Y-m-d' ) );
 	$date_start = esc_attr( date( 'Y-m-d', strtotime( '-1 week' ) ) );
-	$action_count = GHActivity_Calls::count_posts_per_event_type( $date_start, $date_end, $team, '', false );
 
-	// Remove all actions with a count of 0. We won't need to display them.
-	$action_count = array_filter( $action_count );
-
-	/**
-	* Let's loop through our array of actions taken,
-	* and replace the taxonomy slugs used when counting posts by the taxonomy names, better for display.
-	*/
-	foreach ( $action_count as $type => $count ) {
-		// Get the pretty name for each taxonomy.
-		$tax_info = get_term_by( 'slug', $type, 'ghactivity_event_type' );
-		$type_name = $tax_info->name;
-
-		// Add the new pretty names to the array, matching them to their value.
-		$action_count[ $type_name ] = $count;
-
-		// Remove the old array key.
-		unset( $action_count[ $type ] );
-	}
-
-	/**
-	* Add number of commits to the report.
-	*/
-	$commit_count = GHActivity_Calls::count_commits( $date_start, $date_end, $team );
-	if ( ! empty( $commit_count ) ) {
-		$commits_key = __( 'Committed', 'ghactivity' );
-		$action_count[ $commits_key ] = (int) $commit_count;
-	}
-
-	/**
-	* Add number of repos to the report.
-	*/
-	$repos_count = GHActivity_Calls::count_repos( $date_start, $date_end, $team );
-	if ( ! empty( $repos_count ) ) {
-		$repos_key = __( 'Projects', 'ghactivity' );
-		$action_count[ $repos_key ] = (int) $repos_count;
-	}
+	$action_count = GHActivity_Calls::get_summary_counts( $date_start, $date_end, $team, '', false );
 
 	$report = sprintf(
 		'<header class="page-header"><h2>%s</h2>',
