@@ -211,7 +211,7 @@ class GHActivity_Reports {
 					'title'      => $issue->title,
 					'comments'   => $issue->comments,
 					'created_at' => date_i18n( get_option( 'date_format' ), strtotime( $issue->created_at ) ),
-					'milestone'  => $issue->milestone->title,
+					'milestone'  => ( $issue->milestone->title ? $issue->milestone->title : '' ),
 				);
 			}
 
