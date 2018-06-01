@@ -7,3 +7,4 @@
 webpack.config.js
 _build/*.map
 npm-debug.log
+readme.md
