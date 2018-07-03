@@ -1,5 +1,11 @@
-todo.md
+# Folders
 /node_modules
+/_build
+/vendor
+/.vscode
+
+# Files
 .DS_Store
 npm-debug.log
-/_build
+todo.md
+
