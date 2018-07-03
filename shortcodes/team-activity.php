@@ -52,8 +52,20 @@ function ghactivity_team_shortcode( $atts ) {
 	 */
 	$repo = apply_filters( 'ghactivity_team_report_repo_to_monitor', '' );
 
-	$action_count = GHActivity_Calls::get_summary_counts( $date_start, $date_end, $team, $repo, false );
+	$action_count = GHActivity_Calls::get_summary_counts( $date_start, $date_end, $team, $repo );
 
+	return team_activity_markup( $action_count, $team );
+}
+
+/**
+ * Generates HTML for team_activity shortcode
+ *
+ * @since x.x.x
+ *
+ * @param array $action_count Array of attributes.
+ * @param array $team Array of teammates.
+ */
+function team_activity_markup( $action_count, $team ) {
 	$report = sprintf(
 		'<header class="page-header"><h2>%s</h2>',
 		esc_html__( 'In the past 7 days, here is what the team did:', 'ghactivity' )
