@@ -775,15 +775,14 @@ class GHActivity_Calls {
 			'post_status'    => 'publish',
 			'posts_per_page' => -1,  // Show all posts.
 			'date_query'     => array(
-				'after' => $date_start,
-				'before' => $date_end,
+				'after'     => $date_start,
+				'before'    => $date_end,
 				'inclusive' => true,
 			),
 			'tax_query'      => array(
-				'relation' => 'AND',
 				array(
 					'taxonomy' => 'ghactivity_actor',
-					'field'    => 'name',
+					'field'    => 'slug',
 					'terms'    => $person,
 				),
 				array(
@@ -807,7 +806,6 @@ class GHActivity_Calls {
 
 		while ( $query->have_posts() ) {
 			$query->the_post();
-
 			$terms = get_the_terms( $query->post->ID, 'ghactivity_event_type' );
 
 			/**
@@ -845,17 +843,15 @@ class GHActivity_Calls {
 						}
 					}
 				}
-			} else {
-				if ( $terms && ! is_wp_error( $terms ) ) {
-					foreach ( $terms as $term ) {
-						if ( isset( $count[ $term->slug ] ) ) {
-							$count[ $term->slug ]++;
-						} else {
-							$count[ $term->slug ] = 1;
-						}
+			} elseif ( $terms && ! is_wp_error( $terms ) ) {
+				foreach ( $terms as $term ) {
+					if ( isset( $count[ $term->slug ] ) ) {
+						$count[ $term->slug ]++;
+					} else {
+						$count[ $term->slug ] = 1;
 					}
 				}
-			} // End if().
+			} // End elseif.
 
 			/**
 			 * Filter the final array of event types and matching counts after calculation.
@@ -1043,13 +1039,12 @@ class GHActivity_Calls {
 	 * @param string       $date_end        End date range, using a strtotime compatible format.
 	 * @param string       $person          Get stats for a specific GitHub username.
 	 * @param string|array $repo            Get stats for a specific GitHub repo, or a list of repos.
-	 * @param bool         $split_per_actor Split counts per actor.
 	 *
 	 * @return $count      Array of count of actions and info about person/repo.
 	 */
-	public static function get_summary_counts( $date_start, $date_end, $person = '', $repo, $split_per_actor = false ) {
+	public static function get_summary_counts( $date_start, $date_end, $person = '', $repo ) {
 		// Action count during that period.
-		$action_count = self::count_posts_per_event_type( $date_start, $date_end, $person, $repo, $split_per_actor );
+		$action_count = self::count_posts_per_event_type( $date_start, $date_end, $person, $repo );
 
 		// Remove all actions with a count of 0. We won't need to display them.
 		$action_count = array_filter( $action_count );
@@ -1058,9 +1053,9 @@ class GHActivity_Calls {
 		 * Let's loop through our array of actions taken,
 		 * and replace the taxonomy slugs used when counting posts by the taxonomy names, better for display.
 		 */
-		foreach( $action_count as $type => $count ) {
-			// Get the pretty name for each taxonomy
-			$tax_info = get_term_by( 'slug', $type, 'ghactivity_event_type' );
+		foreach ( $action_count as $type => $count ) {
+			// Get the pretty name for each taxonomy.
+			$tax_info  = get_term_by( 'slug', $type, 'ghactivity_event_type' );
 			$type_name = $tax_info->name;
 
 			// Add the new pretty names to the array, matching them to their value.

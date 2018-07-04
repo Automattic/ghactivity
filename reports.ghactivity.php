@@ -64,7 +64,7 @@ class GHActivity_Reports {
 		 */
 		$dates = apply_filters( 'ghactivity_main_report_dates', $dates );
 
-		$action_count = GHActivity_Calls::get_summary_counts( $dates['date_start'], $dates['date_end'], $people, $repo, false );
+		$action_count = GHActivity_Calls::get_summary_counts( $dates['date_start'], $dates['date_end'], $people, $repo );
 
 		$chart_data = GHActivity_Charts::get_action_chart_data( $action_count );
 
