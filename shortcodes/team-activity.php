@@ -60,7 +60,7 @@ function ghactivity_team_shortcode( $atts ) {
 /**
  * Generates HTML for team_activity shortcode
  *
- * @since x.x.x
+ * @since 2.0
  *
  * @param array $action_count Array of attributes.
  * @param array $team Array of teammates.
