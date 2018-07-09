@@ -24,18 +24,17 @@ const webpackConfig = {
 			test: /\.jsx?$/,
 			exclude: /node_modules/,
 			loader: 'babel-loader',
-		}, ],
+		},
+		{
+			test: /\.css$/,
+			loader: "style-loader!css-loader?importLoaders=1"
+		},
+		{
+			test: /\.(png|woff|woff2|eot|ttf|svg)$/,
+      loader: 'url-loader?limit=1024&name=/fonts/[name].[ext]'
+    }
+	],
 	},
 };
-
-if (process.env.NODE_ENV === 'production') {
-	// When running in production, we want to use the minified script so that the file is smaller
-	webpackConfig.plugins.push(new webpack.optimize.UglifyJsPlugin({
-		compress: {
-			warnings: false
-		}
-	}));
-
-}
 
 module.exports = webpackConfig;

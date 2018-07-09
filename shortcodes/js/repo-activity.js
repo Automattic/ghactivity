@@ -1,5 +1,7 @@
 import React from 'react';
 import { render } from 'react-dom';
+import 'bootstrap';
+import '../../css/bootstrap/css/bootstrap-iso.css';
 
 // Internal imports.
 import ActivityRepo from './components/ActivityRepo';
