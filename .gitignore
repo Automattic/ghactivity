@@ -3,6 +3,7 @@
 /_build
 /vendor
 /.vscode
+/.idea
 
 # Files
 .DS_Store
