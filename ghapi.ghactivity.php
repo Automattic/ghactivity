@@ -236,7 +236,7 @@ class API_Calls {
 
 		$repos_to_monitor = $this->get_monitored_repos( 'names' );
 		if ( empty( $repos_to_monitor ) ) {
-			return response_body;
+			return $response_body;
 		}
 
 		foreach ( $repos_to_monitor as $repo_name ) {
