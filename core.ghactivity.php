@@ -401,7 +401,7 @@ class GHActivity_Calls {
 	 * @since 1.0
 	 */
 	public function publish_event() {
-
+		error_log( print_r( 'publish_event START!', 1 ) );
 		$github_events = $this->get_github_activity();
 
 		/**
@@ -583,6 +583,9 @@ class GHActivity_Calls {
 					} // End foreach().
 				}
 			}
+
+			$this->update_issue_labels();
+			error_log( print_r( 'publish_event DONE!', 1 ) );
 		}
 	}
 
@@ -1033,6 +1036,145 @@ class GHActivity_Calls {
 		wp_reset_postdata();
 
 		return (int) count( $repos );
+	}
+
+	/**
+	 * Record any label updates into taxonomy meta of issue post.
+	 *
+	 * @since 2.1
+	 */
+	public function update_issue_labels() {
+		$event_list = $this->get_github_issue_events();
+
+		if ( ! isset( $event_list ) || ! is_array( $event_list ) ) {
+			return;
+		}
+
+		// Sorts all the events by created date from older to newer.
+		usort($event_list, function( $a, $b ) {
+			return ( strtotime( $a->created_at ) < strtotime( $b->created_at ) ) ? -1 : 1;
+		} );
+
+		foreach ( $event_list as $event ) {
+			// process only labeled & unlabeled event types.
+			if ( 'labeled' !== $event->event && 'unlabeled' !== $event->event ) {
+				continue;
+			}
+
+			preg_match( '/(?<=repos\/)(.*?)(?=\/issues)/', $event->url, $match );
+			$issue_number = $event->issue->number;
+			$repo_name    = $match[0];
+			$slug         = $repo_name . '#' . $issue_number;
+			$post_id      = $this->find_post( $repo_name, $issue_number );
+			if ( ! $post_id ) {
+				continue;
+			}
+			error_log( print_r( $slug, 1 ) );
+			// Add missing labels if needed.
+			wp_set_object_terms( $post_id, $event->label->name, 'ghactivity_issues_labels', true );
+			$terms = wp_get_post_terms( $post_id, 'ghactivity_issues_labels' );
+
+			/**
+			 * Since ghactivity_issues_labels terms are shared between all the issues
+			 * we need to store term metadata (label status, labeled/unlabeled date) as an array
+			 * Expected key/value pair:
+			 *  automattic/jetpack#5432 => [
+			 *    'status'    => labeled,
+			 *    'labeled'   => 2018-07-10T21:52:02Z",
+			 *    'unlabeled' => null,
+			 *  ]
+			 */
+			foreach ( $terms as $term ) {
+				if ( $term->name === $event->label->name ) {
+					$record = [
+						'status'    => null,
+						'labeled'   => null,
+						'unlabeled' => null,
+					];
+					if ( metadata_exists( 'term', $term->term_id, $slug ) ) {
+						$record = get_term_meta( $term->term_id, $slug, true );
+					}
+					$record['status']        = $event->event;
+					$record[ $event->event ] = $event->created_at;
+					update_term_meta( $term->term_id, $slug, $record );
+				}
+			}
+		}
+	}
+
+	/**
+	 * Search for a exisiting `ghactivity_issue` post
+	 * Return post_id if found, and null if not.
+	 *
+	 * @param string $repo_name name of the repo.
+	 * @param int    $issue_number issue number.
+	 *
+	 * @return int $post_id ID of the post. Null if not found.
+	 */
+	public function find_post( $repo_name, $issue_number ) {
+		$post_id     = null;
+		$is_new_args = array(
+			'post_type'      => 'ghactivity_issue',
+			'post_status'    => 'publish',
+			'posts_per_page' => 1,
+			'tax_query'      => array(
+				array(
+					'taxonomy' => 'ghactivity_repo',
+					'field'    => 'name',
+					'terms'    => $repo_name,
+				),
+			),
+			'meta_query' => array(
+				array(
+					'key'     => 'number',
+					'value'   => $issue_number,
+					'compare' => '=',
+				),
+			),
+		);
+		$query = new WP_Query( $is_new_args );
+		if ( $query->have_posts() ) {
+			$query->the_post();
+			$post_id = $query->post->ID;
+		}
+		wp_reset_postdata();
+
+		return $post_id;
+	}
+
+
+	/**
+	 * Remote call to get label events for every monitored repo
+	 *
+	 * @since 2.1.0
+	 *
+	 * @return null|array
+	 */
+	public function get_github_issue_events() {
+		$response_body    = array();
+		$repos_to_monitor = $this->get_monitored_repos( 'names' );
+		if ( empty( $repos_to_monitor ) ) {
+			return $response_body;
+		}
+		foreach ( $repos_to_monitor as $repo_name ) {
+			$query_url = sprintf(
+				'https://api.github.com/repos/%1$s/issues/events?access_token=%2$s&per_page=100',
+				esc_html( $repo_name ),
+				$this->get_option( 'access_token' )
+			);
+
+			$data = wp_remote_get( esc_url_raw( $query_url ) );
+			if (
+				is_wp_error( $data )
+				|| 200 !== $data['response']['code']
+				|| empty( $data['body'] )
+			) {
+				return $response_body;
+			}
+			$single_response_body = json_decode( $data['body'] );
+			$response_body        = array_merge( $single_response_body, $response_body );
+		}
+		return $response_body;
 	}
 }
 new GHActivity_Calls();
