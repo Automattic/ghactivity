@@ -262,6 +262,7 @@ class GHActivity_Calls {
 	 * @since 1.0
 	 */
 	public function publish_event() {
+		error_log(print_r('publish_event STARTED', 1));
 		$github_events = $this->api->get_github_activity();
 
 		/**
@@ -442,8 +443,8 @@ class GHActivity_Calls {
 				}
 			} // End foreach().
 		}
-
 		$this->update_issue_labels();
+		error_log(print_r('publish_event DONE!', 1));
 	}
 
 	/**
@@ -869,20 +870,38 @@ class GHActivity_Calls {
 			preg_match( '/(?<=repos\/)(.*?)(?=\/issues)/', $event->url, $match );
 			$issue_number = $event->issue->number;
 			$repo_name    = $match[0];
+			$slug         = $repo_name . '#' . $issue_number;
 			$post_id      = $this->find_post( $repo_name, $issue_number );
 			if ( ! $post_id ) {
 				continue;
 			}
-
 			// Add missing labels if needed.
 			wp_set_object_terms( $post_id, $event->label->name, 'ghactivity_issues_labels', true );
 			$terms = wp_get_post_terms( $post_id, 'ghactivity_issues_labels' );
 
-			// update term metadata keys: status, unlabeled, labeled.
+			/**
+			 * Since ghactivity_issues_labels terms are shared between all the issues
+			 * we need to store term metadata (label status, labeled/unlabeled date) as an array
+			 * Expected key/value pair:
+			 *  automattic/jetpack#5432 => [
+			 *    'status'    => labeled,
+			 *    'labeled'   => 2018-07-10T21:52:02Z",
+			 *    'unlabeled' => null,
+			 *  ]
+			 */
 			foreach ( $terms as $term ) {
 				if ( $term->name === $event->label->name ) {
-					update_term_meta( $term->term_id, 'status', $event->event );
-					update_term_meta( $term->term_id, $event->event, $event->created_at );
+					$record = [
+						'status'    => null,
+						'labeled'   => null,
+						'unlabeled' => null,
+					];
+					if ( metadata_exists( 'term', $term->term_id, $slug ) ) {
+						$record = get_term_meta( $term->term_id, $slug, true );
+					}
+					$record['status']        = $event->event;
+					$record[ $event->event ] = $event->created_at;
+					update_term_meta( $term->term_id, $slug, $record );
 				}
 			}
 		}
