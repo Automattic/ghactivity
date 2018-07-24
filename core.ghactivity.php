@@ -401,7 +401,6 @@ class GHActivity_Calls {
 	 * @since 1.0
 	 */
 	public function publish_event() {
-		error_log( print_r( 'publish_event START!', 1 ) );
 		$github_events = $this->get_github_activity();
 
 		/**
@@ -585,7 +584,6 @@ class GHActivity_Calls {
 			}
 
 			$this->update_issue_labels();
-			error_log( print_r( 'publish_event DONE!', 1 ) );
 		}
 	}
 
@@ -1050,10 +1048,17 @@ class GHActivity_Calls {
 			return;
 		}
 
-		// Sorts all the events by created date from older to newer.
-		usort($event_list, function( $a, $b ) {
+		/**
+		 * Sort events by its creation date in ascending order
+		 *
+		 * @param Object $a Event object as it returned from Github API.
+		 * @param Object $b Event object as it returned from Github API.
+		 */
+		function sort_by_date( $a, $b ) {
 			return ( strtotime( $a->created_at ) < strtotime( $b->created_at ) ) ? -1 : 1;
-		} );
+		}
+		// Sorts all the events by created date from older to newer.
+		usort( $event_list, sort_by_date );
 
 		foreach ( $event_list as $event ) {
 			// process only labeled & unlabeled event types.
@@ -1069,7 +1074,6 @@ class GHActivity_Calls {
 			if ( ! $post_id ) {
 				continue;
 			}
-			error_log( print_r( $slug, 1 ) );
 			// Add missing labels if needed.
 			wp_set_object_terms( $post_id, $event->label->name, 'ghactivity_issues_labels', true );
 			$terms = wp_get_post_terms( $post_id, 'ghactivity_issues_labels' );
@@ -1086,11 +1090,11 @@ class GHActivity_Calls {
 			 */
 			foreach ( $terms as $term ) {
 				if ( $term->name === $event->label->name ) {
-					$record = [
+					$record = array(
 						'status'    => null,
 						'labeled'   => null,
 						'unlabeled' => null,
-					];
+					);
 					if ( metadata_exists( 'term', $term->term_id, $slug ) ) {
 						$record = get_term_meta( $term->term_id, $slug, true );
 					}
