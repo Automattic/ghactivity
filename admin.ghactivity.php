@@ -344,22 +344,28 @@ function ghactivity_label_scan_callback() {
 	echo '</p>';
 
 	echo '<div class="wrap">';
-	echo '<button onclick="triggerLabelScan()">Trigger Label Rescan</button>';
+	echo '<button onclick="triggerLabelScan()">';
+	esc_html_e( 'Trigger Label Rescan', 'ghactivity' );
+	echo '</button>';
 	echo '</div>';
 
+	$ajax_nonce      = wp_create_nonce( 'ghactivity-label-scan-nonce' );
+	$confirm_dialog  = esc_html__( 'This is time-consuming operation. Make sure not to run it more then once!', 'ghactivity' );
+	$response_dialog = esc_html__( 'Got this from the server: ', 'ghactivity' );
 	?>
 		<script type="text/javascript" >
 		function triggerLabelScan($) {
-			if ( ! confirm( 'This is time-consuming operation. Make sure not to run it more then once!' ) ) {
+			if ( ! confirm( '<?php echo esc_html( $confirm_dialog ); ?>' ) ) {
 				return;
 			}
 			var data = {
 				'action': 'label_scan_action',
+				'security': '<?php echo esc_html( $ajax_nonce ); ?>',
 			};
 
 			// since 2.8 ajaxurl is always defined in the admin header and points to admin-ajax.php
 			jQuery.post( ajaxurl, data, function( response ) {
-				alert( 'Got this from the server: ' + response );
+				alert( '<?php echo esc_html( $response_dialog ); ?>'  + response );
 			} );
 		}
 		</script>
@@ -370,10 +376,14 @@ add_action( 'wp_ajax_label_scan_action', 'label_scan_action' );
 
 function label_scan_action() {
 	error_log( print_r( 'label_scan_action START!', 1 ) );
+	check_ajax_referer( 'ghactivity-label-scan-nonce', 'security' );
 	global $wpdb;
 	$gha = new GHActivity_Calls();
 
-	$post_ids = $wpdb->get_col( "SELECT ID FROM wp_posts WHERE post_type = 'ghactivity_issue' AND post_status = 'publish'" );
+	$post_ids = $wpdb->get_col( $wpdb->prepare(
+		'SELECT ID FROM wp_posts WHERE post_type = %s AND post_status = %s',
+		array( 'ghactivity_issue', 'publish' )
+	) );
 	foreach ( $post_ids as $post_id ) {
 		$issue_number = get_post_meta( $post_id, 'number', true );
 		$repo_name    = get_terms( array(

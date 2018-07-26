@@ -1201,7 +1201,7 @@ class GHActivity_Calls {
 		$query_url     = sprintf(
 			'https://api.github.com/repos/%1$s/issues%2$s/events?access_token=%3$s&per_page=100',
 			esc_html( $repo_name ),
-			$issue_number ? '/' . $issue_number : '',
+			esc_html( $issue_number ? '/' . $issue_number : '' ),
 			$this->get_option( 'access_token' )
 		);
 
