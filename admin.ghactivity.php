@@ -369,18 +369,12 @@ function ghactivity_label_scan_callback() {
 add_action( 'wp_ajax_label_scan_action', 'label_scan_action' );
 
 function label_scan_action() {
-	// ini_set( 'memory_limit', '512M' );
 	error_log( print_r( 'label_scan_action START!', 1 ) );
+	global $wpdb;
 	$gha = new GHActivity_Calls();
 
-	$query = new WP_Query( array(
-		'post_type'      => 'ghactivity_issue',
-		'posts_per_page' => -1,
-	) );
-
-	while ( $query->have_posts() ) {
-		$query->the_post();
-		$post_id      = $query->post->ID;
+	$post_ids = $wpdb->get_col( "SELECT ID FROM wp_posts WHERE post_type = 'ghactivity_issue' AND post_status = 'publish'" );
+	foreach ( $post_ids as $post_id ) {
 		$issue_number = get_post_meta( $post_id, 'number', true );
 		$repo_name    = get_terms( array(
 			'object_ids' => $post_id,
@@ -395,7 +389,7 @@ function label_scan_action() {
 
 		$gha->update_issue_labels( $response, $options );
 	}
-	wp_reset_postdata();
+
 	error_log( print_r( 'label_scan_action DONE!', 1 ) );
 
 	wp_die(); // this is required to terminate immediately and return a proper response.
