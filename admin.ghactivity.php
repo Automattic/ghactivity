@@ -384,23 +384,29 @@ function label_scan_action() {
 		'SELECT ID FROM wp_posts WHERE post_type = %s AND post_status = %s',
 		array( 'ghactivity_issue', 'publish' )
 	) );
-	foreach ( $post_ids as $post_id ) {
-		$issue_number = get_post_meta( $post_id, 'number', true );
-		$repo_name    = get_terms( array(
-			'object_ids' => $post_id,
-			'taxonomy'   => 'ghactivity_repo',
-		) )[0]->name;
-		$options      = array(
-			'issue_number' => $issue_number,
-			'repo_name'    => $repo_name,
-			'post_id'      => $post_id,
-		);
-		$response     = $gha->get_github_issue_events( $repo_name, $issue_number );
 
-		$gha->update_issue_labels( $response, $options );
+	$post_ids_chunks = array_chunk( $post_ids, 200 );
+	foreach ( $post_ids_chunks as $post_ids_chunk ) {
+		foreach ( $post_ids_chunk as $post_id ) {
+			$issue_number = get_post_meta( $post_id, 'number', true );
+			$repo_name    = get_terms( array(
+				'object_ids' => $post_id,
+				'taxonomy'   => 'ghactivity_repo',
+			) )[0]->name;
+			$options      = array(
+				'issue_number' => $issue_number,
+				'repo_name'    => $repo_name,
+				'post_id'      => $post_id,
+			);
+			$response     = $gha->get_github_issue_events( $repo_name, $issue_number );
+
+			$gha->update_issue_labels( $response, $options );
+		}
+
+		error_log( print_r( 'label_scan_action PASSED 200 IDS!', 1 ) );
+		sleep( 10 );
 	}
 
 	error_log( print_r( 'label_scan_action DONE!', 1 ) );
-
 	wp_die(); // this is required to terminate immediately and return a proper response.
 }
