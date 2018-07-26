@@ -1072,8 +1072,11 @@ class GHActivity_Calls {
 		usort( $event_list, array( 'GHActivity_Calls', 'sort_by_date' ) );
 
 		foreach ( $event_list as $event ) {
-			$wp_importer = new WP_Importer();
-			$wp_importer->stop_the_insanity();
+			global $wpdb, $wp_actions;
+			// Or define( 'WP_IMPORTING', true );
+			$wpdb->queries = array();
+			// Reset $wp_actions to keep it from growing out of control
+			$wp_actions = array();
 			// process only labeled & unlabeled event types.
 			if ( 'labeled' !== $event->event && 'unlabeled' !== $event->event ) {
 				continue;
