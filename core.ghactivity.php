@@ -613,9 +613,37 @@ class GHActivity_Calls {
 		 * Update the post if not.
 		 * We make a WP_Query and set $is_new to help us figure this out.
 		 */
-		$post_id = GHActivity_Queries::find_gh_issue( $issue_details['repo_name'], $issue_details['number'] );
+		$is_new_args = array(
+			'post_type'      => 'ghactivity_issue',
+			'post_status'    => 'publish',
+			'posts_per_page' => 1,
+			'tax_query'      => array(
+				array(
+					'taxonomy' => 'ghactivity_repo',
+					'field'    => 'name',
+					'terms'    => $issue_details['repo_name'],
+				),
+			),
+			'meta_query' => array(
+				array(
+					'key'     => 'number',
+					'value'   => $issue_details['number'],
+					'compare' => '=',
+				),
+			),
+		);
+		$query = new WP_Query( $is_new_args );
+		if ( $query->have_posts() ) {
+			$query->the_post();
 
-		if ( ! $post_id ) {
+			$is_new = false;
+			$post_id = $query->post->ID;
+		} else {
+			$is_new = true;
+		}
+		wp_reset_postdata();
+
+		if ( $is_new ) {
 			// Create taxonomies.
 			$taxonomies = array(
 				'ghactivity_repo'          => $issue_details['repo_name'],
@@ -1060,15 +1088,13 @@ class GHActivity_Calls {
 				preg_match( '/(?<=repos\/)(.*?)(?=\/issues)/', $event->url, $match );
 				$issue_number = $event->issue->number;
 				$repo_name    = $match[0];
-				$post_id      = GHActivity_Queries::find_gh_issue( $repo_name, $issue_number );
+				$post_id      = $this->find_post( $repo_name, $issue_number );
 			}
 
 			$slug = $repo_name . '#' . $issue_number;
 			if ( ! $post_id ) {
 				continue;
 			}
-
-			error_log( print_r( $slug, 1 ) );
 
 			if ( 'closed' === $event->event ) {
 				wp_set_post_terms( $post_id, 'closed', 'ghactivity_issues_state', false );
@@ -1097,25 +1123,62 @@ class GHActivity_Calls {
 			 *  ]
 			 */
 			foreach ( $terms as $term ) {
-				if ( $term->name !== $event->label->name ) {
-					continue;
+				if ( $term->name === $event->label->name ) {
+					$record = array(
+						'status'    => null,
+						'labeled'   => null,
+						'unlabeled' => null,
+					);
+					if ( metadata_exists( 'term', $term->term_id, $slug ) ) {
+						$record = get_term_meta( $term->term_id, $slug, true );
+					}
+					$record['status']        = $event->event;
+					$record[ $event->event ] = $event->created_at;
+					update_term_meta( $term->term_id, $slug, $record );
 				}
-				$record = array(
-					'status'    => null,
-					'labeled'   => null,
-					'unlabeled' => null,
-				);
-				if ( metadata_exists( 'term', $term->term_id, $slug ) ) {
-					$record = get_term_meta( $term->term_id, $slug, true );
-				}
-				$record['status']        = $event->event;
-				$record[ $event->event ] = $event->created_at;
-				update_term_meta( $term->term_id, $slug, $record );
 			}
 		}
 	}
 
+	/**
+	 * Search for a exisiting `ghactivity_issue` post
+	 * Return post_id if found, and null if not.
+	 *
+	 * @param string $repo_name name of the repo.
+	 * @param int    $issue_number issue number.
+	 *
+	 * @return int $post_id ID of the post. Null if not found.
+	 */
+	public function find_post( $repo_name, $issue_number ) {
+		$post_id     = null;
+		$is_new_args = array(
+			'post_type'      => 'ghactivity_issue',
+			'post_status'    => 'publish',
+			'posts_per_page' => 1,
+			'tax_query'      => array(
+				array(
+					'taxonomy' => 'ghactivity_repo',
+					'field'    => 'name',
+					'terms'    => $repo_name,
+				),
+			),
+			'meta_query' => array(
+				array(
+					'key'     => 'number',
+					'value'   => $issue_number,
+					'compare' => '=',
+				),
+			),
+		);
+		$query = new WP_Query( $is_new_args );
+		if ( $query->have_posts() ) {
+			$query->the_post();
+			$post_id = $query->post->ID;
+		}
+		wp_reset_postdata();
 
+		return $post_id;
+	}
 
 
 	/**
