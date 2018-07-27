@@ -379,6 +379,8 @@ add_action( 'wp_ajax_label_scan_action', 'label_scan_action' );
  */
 function label_scan_action() {
 	check_ajax_referer( 'ghactivity-label-scan-nonce', 'security' );
+	wp_suspend_cache_addition( true );
+	error_log( print_r( 'label_scan_action START!', 1 ) );
 	global $wpdb;
 	$gha = new GHActivity_Calls();
 
@@ -407,5 +409,6 @@ function label_scan_action() {
 		}
 		sleep( 20 );
 	}
+	error_log( print_r( 'label_scan_action DONE!', 1 ) );
 	wp_die(); // this is required to terminate immediately and return a proper response.
 }
