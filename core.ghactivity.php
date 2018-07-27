@@ -1101,8 +1101,10 @@ class GHActivity_Calls {
 
 			if ( 'closed' === $event->event ) {
 				wp_set_post_terms( $post_id, 'closed', 'ghactivity_issues_state', false );
+				continue;
 			} elseif ( 'reopened' === $event->event ) {
 				wp_set_post_terms( $post_id, 'open', 'ghactivity_issues_state', false );
+				continue;
 			}
 
 			// Add missing labels if needed.
