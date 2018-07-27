@@ -99,13 +99,13 @@ function ghactivity_options_init() {
 		'ghactivity'
 	);
 
-		// Init label scan Section.
-		add_settings_section(
-			'ghactivity_repos_monitoring',
-			__( 'Initialize GitHub labels scan', 'ghactivity' ),
-			'ghactivity_label_scan_callback',
-			'ghactivity'
-		);
+	// Init label scan Section.
+	add_settings_section(
+		'ghactivity_label_scan',
+		__( 'Initialize GitHub labels scan', 'ghactivity' ),
+		'ghactivity_label_scan_callback',
+		'ghactivity'
+	);
 
 	// Reports Section.
 	add_settings_section(
@@ -374,8 +374,10 @@ function ghactivity_label_scan_callback() {
 
 add_action( 'wp_ajax_label_scan_action', 'label_scan_action' );
 
+/**
+ * Goes through all the existing `ghactivity_issue` posts and update their labels & state
+ */
 function label_scan_action() {
-	error_log( print_r( 'label_scan_action START!', 1 ) );
 	check_ajax_referer( 'ghactivity-label-scan-nonce', 'security' );
 	global $wpdb;
 	$gha = new GHActivity_Calls();
@@ -394,19 +396,16 @@ function label_scan_action() {
 				'object_ids' => $post_id,
 				'taxonomy'   => 'ghactivity_repo',
 			) )[0]->name;
+			$response     = $gha->get_github_issue_events( $repo_name, $issue_number );
 			$options      = array(
 				'issue_number' => $issue_number,
 				'repo_name'    => $repo_name,
 				'post_id'      => $post_id,
 			);
-			$response     = $gha->get_github_issue_events( $repo_name, $issue_number );
-
-			$gha->update_issue_labels( $response, $options );
+			$gha->update_issue_records( $response, $options );
+			sleep( 1 );
 		}
-		sleep( 120 );
-		error_log( print_r( 'label_scan_action PASSED 100 IDS!', 1 ) );
+		sleep( 20 );
 	}
-
-	error_log( print_r( 'label_scan_action DONE!', 1 ) );
 	wp_die(); // this is required to terminate immediately and return a proper response.
 }

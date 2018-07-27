@@ -402,7 +402,6 @@ class GHActivity_Calls {
 	 * @since 1.0
 	 */
 	public function publish_event() {
-		error_log( print_r( 'publish_event START!', 1 ) );
 		$github_events = $this->get_github_activity();
 
 		/**
@@ -585,8 +584,7 @@ class GHActivity_Calls {
 				}
 			}
 
-			$this->update_issue_labels();
-			error_log( print_r( 'publish_event DONE!', 1 ) );
+			$this->update_issue_records();
 		}
 	}
 
@@ -1059,7 +1057,7 @@ class GHActivity_Calls {
 	 * @param array $event_list Event object as it returned from Github API.
 	 * @param array $options List of options which is used when passing list issue-specific events.
 	 */
-	public function update_issue_labels( $event_list = null, $options = null ) {
+	public function update_issue_records( $event_list = null, $options = null ) {
 		if ( ! is_array( $event_list ) && ! is_array( $options ) ) {
 			$event_list = $this->get_all_github_issue_events();
 		}
@@ -1097,7 +1095,6 @@ class GHActivity_Calls {
 			if ( ! $post_id ) {
 				continue;
 			}
-			error_log( print_r( $slug, 1 ) );
 
 			if ( 'closed' === $event->event ) {
 				wp_set_post_terms( $post_id, 'closed', 'ghactivity_issues_state', false );
@@ -1232,15 +1229,19 @@ class GHActivity_Calls {
 		return $response_body;
 	}
 
+	/**
+	 * Clears up "all" cache. Useful in long, resource-consuming operations.
+	 */
 	public function stop_the_insanity() {
 		global $wpdb, $wp_object_cache;
-		$wpdb->queries = array(); // or define( 'WP_IMPORTING', true );
-		if ( !is_object( $wp_object_cache ) )
+		$wpdb->queries = array();
+		if ( ! is_object( $wp_object_cache ) ) {
 			return;
-		$wp_object_cache->group_ops = array();
-		$wp_object_cache->stats = array();
+		}
+		$wp_object_cache->group_ops      = array();
+		$wp_object_cache->stats          = array();
 		$wp_object_cache->memcache_debug = array();
-		$wp_object_cache->cache = array();
+		$wp_object_cache->cache          = array();
 	}
 }
 new GHActivity_Calls();
