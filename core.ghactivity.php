@@ -1073,8 +1073,12 @@ class GHActivity_Calls {
 
 		foreach ( $event_list as $event ) {
 			$this->stop_the_insanity();
-			// process only labeled & unlabeled event types.
-			if ( 'labeled' !== $event->event && 'unlabeled' !== $event->event ) {
+
+			// process only specific event types.
+			if ( 'labeled' !== $event->event
+			&& 'unlabeled' !== $event->event
+			&& 'closed' !== $event->event
+			&& 'reopened' !== $event->event ) {
 				continue;
 			}
 
@@ -1094,9 +1098,15 @@ class GHActivity_Calls {
 				continue;
 			}
 			error_log( print_r( $slug, 1 ) );
+
+			if ( 'closed' === $event->event ) {
+				wp_set_post_terms( $post_id, 'closed', 'ghactivity_issues_state', false );
+			} elseif ( 'reopened' === $event->event ) {
+				wp_set_post_terms( $post_id, 'open', 'ghactivity_issues_state', false );
+			}
+
 			// Add missing labels if needed.
 			wp_set_post_terms( $post_id, $event->label->name, 'ghactivity_issues_labels', true );
-			wp_set_post_terms( $post_id, $event->issue->state, 'ghactivity_issues_state', false ); // replace term e.g open -> closed.
 			$terms = wp_get_post_terms( $post_id, 'ghactivity_issues_labels' );
 
 			/**
