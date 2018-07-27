@@ -385,9 +385,10 @@ function label_scan_action() {
 		array( 'ghactivity_issue', 'publish' )
 	) );
 
-	$post_ids_chunks = array_chunk( $post_ids, 200 );
+	$post_ids_chunks = array_chunk( $post_ids, 100 );
 	foreach ( $post_ids_chunks as $post_ids_chunk ) {
 		foreach ( $post_ids_chunk as $post_id ) {
+			$gha->stop_the_insanity();
 			$issue_number = get_post_meta( $post_id, 'number', true );
 			$repo_name    = get_terms( array(
 				'object_ids' => $post_id,
@@ -402,9 +403,8 @@ function label_scan_action() {
 
 			$gha->update_issue_labels( $response, $options );
 		}
-
-		error_log( print_r( 'label_scan_action PASSED 200 IDS!', 1 ) );
-		sleep( 10 );
+		sleep( 120 );
+		error_log( print_r( 'label_scan_action PASSED 100 IDS!', 1 ) );
 	}
 
 	error_log( print_r( 'label_scan_action DONE!', 1 ) );

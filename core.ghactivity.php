@@ -1096,6 +1096,7 @@ class GHActivity_Calls {
 			error_log( print_r( $slug, 1 ) );
 			// Add missing labels if needed.
 			wp_set_post_terms( $post_id, $event->label->name, 'ghactivity_issues_labels', true );
+			wp_set_post_terms( $post_id, $event->issue->state, 'ghactivity_issues_state', false ); // replace term e.g open -> closed.
 			$terms = wp_get_post_terms( $post_id, 'ghactivity_issues_labels' );
 
 			/**
