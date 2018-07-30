@@ -11,10 +11,10 @@
  * License: GPL2
  */
 
-defined( 'ABSPATH' ) or die( 'No script kiddies please!' );
+defined( 'ABSPATH' ) || die( 'No script kiddies please!' );
 
-define( 'GHACTIVITY__VERSION',     '2.0.0-alpha' );
-define( 'GHACTIVITY__PLUGIN_DIR',  plugin_dir_path( __FILE__ ) );
+define( 'GHACTIVITY__VERSION', '2.0.0-alpha' );
+define( 'GHACTIVITY__PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 
 class Jeherve_GHActivity {
 	private static $instance;
@@ -48,6 +48,8 @@ class Jeherve_GHActivity {
 		require_once( GHACTIVITY__PLUGIN_DIR . 'charts.ghactivity.php' );
 		require_once( GHACTIVITY__PLUGIN_DIR . 'reports.ghactivity.php' );
 		require_once( GHACTIVITY__PLUGIN_DIR . 'rest.ghactivity.php' );
+		require_once( GHACTIVITY__PLUGIN_DIR . 'queries.ghactivity.php' );
+		require_once( GHACTIVITY__PLUGIN_DIR . 'schedule.ghactivity.php' );
 
 		// Settings panel.
 		if ( is_admin() ) {
@@ -58,6 +60,7 @@ class Jeherve_GHActivity {
 		require_once( GHACTIVITY__PLUGIN_DIR . 'shortcodes/main-report.php' );
 		require_once( GHACTIVITY__PLUGIN_DIR . 'shortcodes/repo-activity.php' );
 		require_once( GHACTIVITY__PLUGIN_DIR . 'shortcodes/team-activity.php' );
+		require_once( GHACTIVITY__PLUGIN_DIR . 'shortcodes/average-label-time.php' );
 	}
 
 	public function flush_rules_on_enable() {

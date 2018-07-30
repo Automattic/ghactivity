@@ -13,8 +13,7 @@
 		"modules": true
 	},
 	"plugins": [
-		"eslint-plugin-react",
-		"lodash"
+		"eslint-plugin-react"
 	],
 	"rules": {
 		"array-bracket-spacing": [ 1, "always" ],
@@ -55,7 +54,8 @@
 		"quotes": [ 1, "single", "avoid-escape" ],
 		"react/jsx-curly-spacing": [ 1, "always" ],
 		"react/jsx-no-bind": 1,
-		"react/jsx-space-before-closing": 1,
+		// "react/jsx-space-before-closing": 1,
+		"react/jsx-tag-spacing": [1, { "beforeSelfClosing": "always" }],
 		"react/no-danger": 1,
 		"react/no-did-mount-set-state": 1,
 		"react/no-did-update-set-state": 1,

@@ -5,7 +5,7 @@
  * @since 1.0
  */
 
-defined( 'ABSPATH' ) or die( 'No script kiddies please!' );
+defined( 'ABSPATH' ) || die( 'No script kiddies please!' );
 
 
 /**
@@ -649,3 +649,132 @@ function ghactivity_register_issues_post_type() {
 	) );
 }
 add_action( 'init', 'ghactivity_register_issues_post_type', 0 );
+
+
+/**
+ * Register query records CPT and its taxonomies to keep track of different queries.
+ *
+ * @since 2.0.0
+ */
+function ghactivity_register_query_records_post_type() {
+	register_post_type( 'gh_query_record', array(
+		'label'               => __( 'GitHub Query Records', 'ghactivity' ),
+		'description'         => __( 'GitHub Query Records', 'ghactivity' ),
+		'labels'              => array(
+			'name'           => _x( 'GitHub Query Records', 'Post Type General Name', 'ghactivity' ),
+			'singular_name'  => _x( 'GitHub Query Record', 'Post Type Singular Name', 'ghactivity' ),
+			'menu_name'      => __( 'GitHub Query Records', 'ghactivity' ),
+			'name_admin_bar' => __( 'GitHub Issue', 'ghactivity' ),
+			'archives'       => __( 'Issues Archives', 'ghactivity' ),
+			'all_items'      => __( 'All Query Records', 'ghactivity' ),
+			'add_new_item'   => __( 'Add New Query Record', 'ghactivity' ),
+			'add_new'        => __( 'Add New', 'ghactivity' ),
+			'new_item'       => __( 'New Query Record', 'ghactivity' ),
+			'edit_item'      => __( 'Edit Query Record', 'ghactivity' ),
+			'update_item'    => __( 'Update Query Record', 'ghactivity' ),
+			'view_item'      => __( 'View Query Record', 'ghactivity' ),
+			'search_items'   => __( 'Search Query Record', 'ghactivity' ),
+		),
+		'rewrite'             => array(
+			'slug'                  => 'query_record',
+			'with_front'            => false,
+			'feeds'                 => true,
+			'pages'                 => true,
+		),
+		'supports'            => array( 'title', 'editor', 'wpcom-markdown' ),
+		'taxonomies'          => array(
+			'ghactivity_query_record_type',
+			'ghactivity_repo',
+			'ghactivity_query_label_slug',
+		),
+		'hierarchical'        => false,
+		'public'              => true,
+		'show_ui'             => true,
+		'show_in_menu'        => true,
+		'menu_position'       => 20,
+		'show_in_admin_bar'   => true,
+		'show_in_nav_menus'   => true,
+		'can_export'          => true,
+		'has_archive'         => true,
+		'exclude_from_search' => false,
+		'publicly_queryable'  => true,
+		'capability_type'     => 'page',
+		'menu_icon'           => 'dashicons-info',
+		'show_in_rest'        => true,
+	) );
+
+	/**
+	 * Register Query Record Type Taxonomy.
+	 *
+	 * @since 2.1.0
+	 */
+	register_taxonomy( 'ghactivity_query_record_type', array( 'gh_query_record' ), array(
+		'labels'                     => array(
+			'name'                       => _x( 'Record Type', 'Taxonomy General Name', 'ghactivity' ),
+			'singular_name'              => _x( 'Record Type', 'Taxonomy Singular Name', 'ghactivity' ),
+			'menu_name'                  => __( 'Record Type', 'ghactivity' ),
+			'all_items'                  => __( 'All Record Types', 'ghactivity' ),
+			'parent_item'                => __( 'Parent Item', 'ghactivity' ),
+			'parent_item_colon'          => __( 'Parent Item:', 'ghactivity' ),
+			'new_item_name'              => __( 'New Type Name', 'ghactivity' ),
+			'add_new_item'               => __( 'Add New Record Type', 'ghactivity' ),
+			'edit_item'                  => __( 'Edit Record Type', 'ghactivity' ),
+			'update_item'                => __( 'Update Record Type', 'ghactivity' ),
+			'view_item'                  => __( 'View Record Type', 'ghactivity' ),
+			'separate_items_with_commas' => __( 'Separate items with commas', 'ghactivity' ),
+			'add_or_remove_items'        => __( 'Add or remove items', 'ghactivity' ),
+			'choose_from_most_used'      => __( 'Choose from the most used', 'ghactivity' ),
+			'popular_items'              => __( 'Popular Items', 'ghactivity' ),
+			'search_items'               => __( 'Search Items', 'ghactivity' ),
+			'not_found'                  => __( 'Not Found', 'ghactivity' ),
+			'no_terms'                   => __( 'No items', 'ghactivity' ),
+			'items_list'                 => __( 'Items list', 'ghactivity' ),
+			'items_list_navigation'      => __( 'Items list navigation', 'ghactivity' ),
+		),
+		'hierarchical'               => false,
+		'public'                     => true,
+		'show_ui'                    => true,
+		'show_admin_column'          => true,
+		'show_in_nav_menus'          => true,
+		'show_tagcloud'              => true,
+		'show_in_rest'               => true,
+	) );
+
+	/**
+	 * FIXME: Blah blah
+	 *
+	 * @since 2.1.0
+	 */
+	register_taxonomy( 'ghactivity_query_label_slug', array( 'gh_query_record' ), array(
+		'labels'                     => array(
+			'name'                       => _x( 'Query Label Slug', 'Taxonomy General Name', 'ghactivity' ),
+			'singular_name'              => _x( 'Query Label Slugs', 'Taxonomy Singular Name', 'ghactivity' ),
+			'menu_name'                  => __( 'Query Label Slug', 'ghactivity' ),
+			'all_items'                  => __( 'All Query Label Slugs', 'ghactivity' ),
+			'parent_item'                => __( 'Parent Item', 'ghactivity' ),
+			'parent_item_colon'          => __( 'Parent Item:', 'ghactivity' ),
+			'new_item_name'              => __( 'New Query Label Slug Name', 'ghactivity' ),
+			'add_new_item'               => __( 'Add New Query Label Slug', 'ghactivity' ),
+			'edit_item'                  => __( 'Edit Query Label Slug', 'ghactivity' ),
+			'update_item'                => __( 'Update Query Label Slug', 'ghactivity' ),
+			'view_item'                  => __( 'View Query Label Slug', 'ghactivity' ),
+			'separate_items_with_commas' => __( 'Separate items with commas', 'ghactivity' ),
+			'add_or_remove_items'        => __( 'Add or remove items', 'ghactivity' ),
+			'choose_from_most_used'      => __( 'Choose from the most used', 'ghactivity' ),
+			'popular_items'              => __( 'Popular Items', 'ghactivity' ),
+			'search_items'               => __( 'Search Items', 'ghactivity' ),
+			'not_found'                  => __( 'Not Found', 'ghactivity' ),
+			'no_terms'                   => __( 'No items', 'ghactivity' ),
+			'items_list'                 => __( 'Items list', 'ghactivity' ),
+			'items_list_navigation'      => __( 'Items list navigation', 'ghactivity' ),
+		),
+		'hierarchical'               => false,
+		'public'                     => true,
+		'show_ui'                    => true,
+		'show_admin_column'          => true,
+		'show_in_nav_menus'          => true,
+		'show_tagcloud'              => true,
+		'show_in_rest'               => true,
+	) );
+}
+add_action( 'init', 'ghactivity_register_query_records_post_type', 0 );
