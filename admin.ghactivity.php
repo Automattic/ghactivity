@@ -3,9 +3,10 @@
  * GHActivity Settings screen
  *
  * @since 1.0
+ *
  */
 
-defined( 'ABSPATH' ) or die( 'No script kiddies please!' );
+defined( 'ABSPATH' ) || die( 'No script kiddies please!' );
 
 /**
  * Create Menu page.
@@ -13,8 +14,8 @@ defined( 'ABSPATH' ) or die( 'No script kiddies please!' );
 function ghactivity_menu() {
 	global $ghactivity_settings_page;
 	$ghactivity_settings_page = add_options_page(
-		__('GHActivity', 'ghactivity' ),
-		__('GitHub Activity Settings', 'ghactivity' ),
+		__( 'GHActivity', 'ghactivity' ),
+		__( 'GitHub Activity Settings', 'ghactivity' ),
 		'manage_options',
 		'ghactivity',
 		'ghactivity_do_settings'
@@ -26,20 +27,21 @@ add_action( 'admin_menu', 'ghactivity_menu' );
  * Enqueue Custom script on that page.
  *
  * @since 1.1
+ *
  */
 function ghactivity_enqueue_admin_scripts( $hook ) {
 
 	global $ghactivity_settings_page;
 
-	wp_register_script( 'ghactivity-reports', plugins_url( 'js/reports.js' , __FILE__ ), array( 'jquery', 'jquery-ui-datepicker' ), GHACTIVITY__VERSION );
+	wp_register_script( 'ghactivity-reports', plugins_url( 'js/reports.js', __FILE__ ), array( 'jquery', 'jquery-ui-datepicker' ), GHACTIVITY__VERSION );
 	$report_options = array(
 		'date_format' => 'yy-mm-dd',
 	);
 	wp_localize_script( 'ghactivity-reports', 'report_options', $report_options );
 
-	wp_register_style( 'ghactivity-reports-datepicker', plugins_url( 'css/datepicker.css' , __FILE__ ), array(), GHACTIVITY__VERSION );
+	wp_register_style( 'ghactivity-reports-datepicker', plugins_url( 'css/datepicker.css', __FILE__ ), array(), GHACTIVITY__VERSION );
 
-	if ( $ghactivity_settings_page != $hook ) {
+	if ( $ghactivity_settings_page !== $hook ) {
 		return;
 	}
 
@@ -53,7 +55,7 @@ add_action( 'admin_enqueue_scripts', 'ghactivity_enqueue_admin_scripts' );
 function ghactivity_options_init() {
 	register_setting( 'ghactivity_settings', 'ghactivity', 'ghactivity_settings_validate' );
 
-	// Main GitHub App Settings Section
+	// Main GitHub App Settings Section.
 	add_settings_section(
 		'ghactivity_app_settings',
 		__( 'GitHub App Settings', 'ghactivity' ),
@@ -89,7 +91,7 @@ function ghactivity_options_init() {
 		'ghactivity_app_settings'
 	);
 
-	// Repos Section
+	// Repos Section.
 	add_settings_section(
 		'ghactivity_repos_monitoring',
 		__( 'Monitoring activity on specific repositories', 'ghactivity' ),
@@ -97,7 +99,15 @@ function ghactivity_options_init() {
 		'ghactivity'
 	);
 
-	// Reports Section
+	// Init label scan Section.
+	add_settings_section(
+		'ghactivity_label_scan',
+		__( 'Initialize GitHub labels scan', 'ghactivity' ),
+		'ghactivity_label_scan_callback',
+		'ghactivity'
+	);
+
+	// Reports Section.
 	add_settings_section(
 		'ghactivity_reports',
 		__( 'GitHub Activity Reports', 'ghactivity' ),
@@ -142,7 +152,7 @@ function ghactivity_app_settings_callback() {
  *
  * @since 1.0
  */
- // GitHub Username option.
+// GitHub Username option.
 function ghactivity_app_settings_username_callback() {
 	$options = (array) get_option( 'ghactivity' );
 	printf(
@@ -289,7 +299,7 @@ function ghactivity_settings_validate( $input ) {
 function ghactivity_do_settings() {
 	?>
 	<div id="ghactivity_settings" class="wrap">
-		<h1><?php _e( 'GitHub Activity Settings', 'ghactivity' ); ?></h1>
+		<h1><?php esc_html_e( 'GitHub Activity Settings', 'ghactivity' ); ?></h1>
 			<form method="post" action="options.php">
 				<?php
 					settings_fields( 'ghactivity_settings' );
@@ -321,4 +331,81 @@ function ghactivity_do_settings() {
 		?>
 	</div><!-- .wrap -->
 	<?php
+}
+
+/**
+ * GitHub Label Scan section.
+ *
+ * @since 2.1.0
+ */
+function ghactivity_label_scan_callback() {
+	echo '<p>';
+	esc_html_e( 'This button will scan for all the label updates for recorded issues' );
+	echo '</p>';
+
+	echo '<div class="wrap">';
+	echo '<button onclick="triggerLabelScan()">';
+	esc_html_e( 'Trigger Label Rescan', 'ghactivity' );
+	echo '</button>';
+	echo '</div>';
+
+	$ajax_nonce      = wp_create_nonce( 'ghactivity-label-scan-nonce' );
+	$confirm_dialog  = esc_html__( 'This is time-consuming operation. Make sure not to run it more then once!', 'ghactivity' );
+	$response_dialog = esc_html__( 'Got this from the server: ', 'ghactivity' );
+	?>
+		<script type="text/javascript" >
+		function triggerLabelScan($) {
+			if ( ! confirm( '<?php echo esc_html( $confirm_dialog ); ?>' ) ) {
+				return;
+			}
+			var data = {
+				'action': 'label_scan_action',
+				'security': '<?php echo esc_html( $ajax_nonce ); ?>',
+			};
+
+			// since 2.8 ajaxurl is always defined in the admin header and points to admin-ajax.php
+			jQuery.post( ajaxurl, data, function( response ) {
+				alert( '<?php echo esc_html( $response_dialog ); ?>'  + response );
+			} );
+		}
+		</script>
+		<?php
+}
+
+add_action( 'wp_ajax_label_scan_action', 'label_scan_action' );
+
+/**
+ * Goes through all the existing `ghactivity_issue` posts and update their labels & state
+ */
+function label_scan_action() {
+	check_ajax_referer( 'ghactivity-label-scan-nonce', 'security' );
+	wp_suspend_cache_addition( true );
+	global $wpdb;
+	$gha = new GHActivity_Calls();
+
+	$post_ids = $wpdb->get_col( $wpdb->prepare(
+		'SELECT ID FROM wp_posts WHERE post_type = %s AND post_status = %s ORDER BY ID DESC',
+		array( 'ghactivity_issue', 'publish' )
+	) );
+
+	$post_ids_chunks = array_chunk( $post_ids, 200 );
+	foreach ( $post_ids_chunks as $post_ids_chunk ) {
+		foreach ( $post_ids_chunk as $post_id ) {
+			$issue_number = get_post_meta( $post_id, 'number', true );
+			$repo_name    = get_terms( array(
+				'object_ids' => $post_id,
+				'taxonomy'   => 'ghactivity_repo',
+			) )[0]->name;
+			$response     = $gha->get_github_issue_events( $repo_name, $issue_number );
+			$options      = array(
+				'issue_number' => $issue_number,
+				'repo_name'    => $repo_name,
+				'post_id'      => $post_id,
+			);
+			$gha->update_issue_records( $response, $options );
+			sleep( 20 );
+		}
+		sleep( 120 );
+	}
+	wp_die(); // this is required to terminate immediately and return a proper response.
 }

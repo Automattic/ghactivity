@@ -263,6 +263,7 @@ class GHActivity_Calls {
 	 * Get an event type to use as a taxonomy, and in the post content.
 	 *
 	 * Starts from data collected with GitHub API, and displays a nice event type instead.
+	 *
 	 * @see https://developer.github.com/v3/activity/events/types/
 	 *
 	 * @since 1.0
@@ -583,7 +584,7 @@ class GHActivity_Calls {
 				}
 			}
 
-			$this->update_issue_labels();
+			$this->update_issue_records();
 		}
 	}
 
@@ -1037,45 +1038,76 @@ class GHActivity_Calls {
 	}
 
 	/**
+	 * Sort events by its creation date in ascending order
+	 *
+	 * @param Object $a Event object as it returned from Github API.
+	 * @param Object $b Event object as it returned from Github API.
+	 */
+	private function sort_by_date( $a, $b ) {
+		return ( strtotime( $a->created_at ) < strtotime( $b->created_at ) ) ? -1 : 1;
+	}
+
+	/**
 	 * Record any label updates into taxonomy meta of issue post.
+	 * It designed to work with repository issues events & with specific issue events.
+	 * To make it work with latter - $options array should be passed with post_id, repo_name, issue_number values
 	 *
 	 * @since 2.1
+	 *
+	 * @param array $event_list Event object as it returned from Github API.
+	 * @param array $options List of options which is used when passing list issue-specific events.
 	 */
-	public function update_issue_labels() {
-		$event_list = $this->get_github_issue_events();
+	public function update_issue_records( $event_list = null, $options = null ) {
+		if ( ! is_array( $event_list ) && ! is_array( $options ) ) {
+			$event_list = $this->get_all_github_issue_events();
+		}
 
 		if ( ! isset( $event_list ) || ! is_array( $event_list ) ) {
 			return;
 		}
 
-		/**
-		 * Sort events by its creation date in ascending order
-		 *
-		 * @param Object $a Event object as it returned from Github API.
-		 * @param Object $b Event object as it returned from Github API.
-		 */
-		function sort_by_date( $a, $b ) {
-			return ( strtotime( $a->created_at ) < strtotime( $b->created_at ) ) ? -1 : 1;
-		}
 		// Sorts all the events by created date from older to newer.
-		usort( $event_list, sort_by_date );
+		usort( $event_list, array( 'GHActivity_Calls', 'sort_by_date' ) );
 
 		foreach ( $event_list as $event ) {
-			// process only labeled & unlabeled event types.
-			if ( 'labeled' !== $event->event && 'unlabeled' !== $event->event ) {
+			// process only specific event types.
+			if ( 'labeled' !== $event->event
+			&& 'unlabeled' !== $event->event
+			&& 'closed' !== $event->event
+			&& 'reopened' !== $event->event ) {
 				continue;
 			}
 
-			preg_match( '/(?<=repos\/)(.*?)(?=\/issues)/', $event->url, $match );
-			$issue_number = $event->issue->number;
-			$repo_name    = $match[0];
-			$slug         = $repo_name . '#' . $issue_number;
-			$post_id      = $this->find_post( $repo_name, $issue_number );
+			if ( is_array( $options ) && $options['issue_number'] && $options['repo_name'] ) {
+				$issue_number = $options['issue_number'];
+				$repo_name    = $options['repo_name'];
+				$post_id      = $options['post_id'];
+			} else {
+				preg_match( '/(?<=repos\/)(.*?)(?=\/issues)/', $event->url, $match );
+				$issue_number = $event->issue->number;
+				$repo_name    = $match[0];
+				$post_id      = $this->find_post( $repo_name, $issue_number );
+			}
+
+			$slug = $repo_name . '#' . $issue_number;
 			if ( ! $post_id ) {
 				continue;
 			}
-			// Add missing labels if needed.
-			wp_set_object_terms( $post_id, $event->label->name, 'ghactivity_issues_labels', true );
+
+			if ( 'closed' === $event->event ) {
+				wp_set_post_terms( $post_id, 'closed', 'ghactivity_issues_state', false );
+				continue;
+			} elseif ( 'reopened' === $event->event ) {
+				wp_set_post_terms( $post_id, 'open', 'ghactivity_issues_state', false );
+				continue;
+			} elseif ( 'labeled' === $event->event ) { // Add missing labels if needed.
+				wp_set_post_terms( $post_id, $event->label->name, 'ghactivity_issues_labels', true );
+				continue;
+			} elseif ( 'unlabeled' === $event->event ) {
+				wp_remove_object_terms( $post_id, $event->label->name, 'ghactivity_issues_labels' );
+				continue;
+			}
+
 			$terms = wp_get_post_terms( $post_id, 'ghactivity_issues_labels' );
 
 			/**
@@ -1148,36 +1180,54 @@ class GHActivity_Calls {
 
 
 	/**
-	 * Remote call to get label events for every monitored repo
+	 * Remote call to get all label events for every monitored repo
 	 *
 	 * @since 2.1.0
 	 *
 	 * @return null|array
 	 */
-	public function get_github_issue_events() {
+	public function get_all_github_issue_events() {
 		$response_body    = array();
 		$repos_to_monitor = $this->get_monitored_repos( 'names' );
 		if ( empty( $repos_to_monitor ) ) {
 			return $response_body;
 		}
 		foreach ( $repos_to_monitor as $repo_name ) {
-			$query_url = sprintf(
-				'https://api.github.com/repos/%1$s/issues/events?access_token=%2$s&per_page=100',
-				esc_html( $repo_name ),
-				$this->get_option( 'access_token' )
-			);
-
-			$data = wp_remote_get( esc_url_raw( $query_url ) );
-			if (
-				is_wp_error( $data )
-				|| 200 !== $data['response']['code']
-				|| empty( $data['body'] )
-			) {
-				return $response_body;
-			}
-			$single_response_body = json_decode( $data['body'] );
+			$single_response_body = $this->get_github_issue_events( $repo_name );
 			$response_body        = array_merge( $single_response_body, $response_body );
 		}
+		return $response_body;
+	}
+
+	/**
+	 * Remote call to get label events for specific repo and issue.
+	 *
+	 * @param string $repo_name name of the repo.
+	 * @param int    $issue_number issue number.
+	 *
+	 * @since 2.1.0
+	 *
+	 * @return null|array
+	 */
+	public function get_github_issue_events( $repo_name, $issue_number = null ) {
+		$response_body = array();
+		$query_url     = sprintf(
+			'https://api.github.com/repos/%1$s/issues%2$s/events?access_token=%3$s&per_page=100',
+			esc_html( $repo_name ),
+			esc_html( $issue_number ? '/' . $issue_number : '' ),
+			$this->get_option( 'access_token' )
+		);
+
+		$data = wp_remote_get( esc_url_raw( $query_url ) );
+		if (
+			is_wp_error( $data )
+			|| 200 !== $data['response']['code']
+			|| empty( $data['body'] )
+		) {
+			return $response_body;
+		}
+
+		$response_body = json_decode( $data['body'] );
 		return $response_body;
 	}
 }
