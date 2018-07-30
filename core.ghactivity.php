@@ -1070,8 +1070,6 @@ class GHActivity_Calls {
 		usort( $event_list, array( 'GHActivity_Calls', 'sort_by_date' ) );
 
 		foreach ( $event_list as $event ) {
-			$this->stop_the_insanity();
-
 			// process only specific event types.
 			if ( 'labeled' !== $event->event
 			&& 'unlabeled' !== $event->event
@@ -1231,21 +1229,6 @@ class GHActivity_Calls {
 
 		$response_body = json_decode( $data['body'] );
 		return $response_body;
-	}
-
-	/**
-	 * Clears up "all" cache. Useful in long, resource-consuming operations.
-	 */
-	public function stop_the_insanity() {
-		// global $wpdb, $wp_object_cache;
-		// $wpdb->queries = array();
-		// if ( ! is_object( $wp_object_cache ) ) {
-		// 	return;
-		// }
-		// $wp_object_cache->group_ops      = array();
-		// $wp_object_cache->stats          = array();
-		// $wp_object_cache->memcache_debug = array();
-		// $wp_object_cache->cache          = array();
 	}
 }
 new GHActivity_Calls();
