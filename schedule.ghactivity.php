@@ -1,20 +1,31 @@
 <?php
 /**
- * Schedule class which include all the sheduled tasks
+ * Schedule class which include all the scheduled tasks
  */
 class GHActivity_Schedule {
 
 	function __construct() {
-		add_action( 'gh_query_average_label_time', array( $this, 'record_average_label_time' ) );
+		add_action( 'gh_query_average_label_time', array( $this, 'record_average_label_times' ) );
 		if ( ! wp_next_scheduled( 'gh_query_average_label_time' ) ) {
 			wp_schedule_event( time(), 'daily', 'gh_query_average_label_time' );
 		}
 	}
 
-	function record_average_label_time() {
-		// FIXME Make it not hardcoded!
-		$repo_name       = 'automattic/jetpack';
-		$label           = '[Status] Needs Review';
+	public function record_average_label_times() {
+		$label_slugs = get_terms(
+			array(
+				'taxonomy'   => 'ghactivity_query_label_slug',
+				'hide_empty' => 0,
+			)
+		);
+		foreach ( $label_slugs as $term ) {
+			$term_slug = explode( '#', $term->name );
+
+			$this->record_average_label_time( $term_slug[0], $term_slug[1] );
+		}
+	}
+
+	public function record_average_label_time( $repo_name, $label ) {
 		$record          = GHActivity_Queries::current_average_label_time( $repo_name, $label );
 		$record_avg_time = $record[0];
 		$record_slugs    = $record[1];
