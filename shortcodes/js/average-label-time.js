@@ -8,10 +8,12 @@ import { render } from 'react-dom';
  * Internal dependencies
  */
 import AverageLabelTime from './components/AverageLabelTime';
+const { repo, label } = ghactivity_avg_label_time;
+const className = `${repo}#${label}`.toLowerCase().replace(/\W/gi,'-');
 
 render((
 	<AverageLabelTime
-		repo={ ghactivity_avg_label_time.repo }
-		label={ ghactivity_avg_label_time.label }
+		repo={ repo }
+		label={ label }
 	/>
-), document.querySelector( '#avg-label-time' ) );
+), document.querySelector( `#avg-label-time.${className}` ) );
