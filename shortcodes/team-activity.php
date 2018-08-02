@@ -21,12 +21,12 @@ function ghactivity_team_shortcode( $atts ) {
 	$team_members_args = array(
 		'taxonomy'   => 'ghactivity_actor',
 		'hide_empty' => false,
-		'fields'     => 'id=>slug',
+		'fields'     => 'id=>name',
 		'meta_query' => array(
 			array(
 				'key'     => 'team',
 				'value'   => esc_attr( $atts['team'] ),
-				'compare' => '=',
+				'compare' => 'LIKE',
 			),
 		),
 	);

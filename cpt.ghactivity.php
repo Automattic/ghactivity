@@ -306,7 +306,7 @@ add_filter( 'manage_edit-ghactivity_team_columns', 'ghactivity_team_columns' );
  */
 function ghactivity_team_display_people_columns( $content, $column_name, $term_id ) {
 	global $feature_groups;
-	if ( 'names' != $column_name ) {
+	if ( 'names' !== $column_name ) {
 		return $content;
 	}
 
@@ -325,7 +325,7 @@ function ghactivity_team_display_people_columns( $content, $column_name, $term_i
 			array(
 				'key'     => 'team',
 				'value'   => $term_id_object['name'],
-				'compare' => '=',
+				'compare' => 'LIKE',
 			),
 		),
 	);
@@ -403,6 +403,10 @@ function ghactivity_team_display_in_person_columns( $content, $column_name, $ter
 	$term_id = absint( $term_id );
 	$team    = get_term_meta( $term_id, 'team', true );
 	if ( ! empty( $team ) ) {
+		// backward compatibility after #7.
+		if ( is_array( $team ) ) {
+			$team = implode( ' ', $team );
+		}
 		$content = sprintf(
 			'%1$s %2$s',
 			$content,
@@ -424,10 +428,10 @@ add_filter( 'manage_ghactivity_actor_custom_column', 'ghactivity_team_display_in
  * @param string $taxonomy Current taxonomy slug.
  */
 function ghactivity_actor_team_field( $tag, $taxonomy ) {
-	$existing_team = get_term_meta( $tag->term_id, 'team', true );
+	$existing_teams = get_term_meta( $tag->term_id, 'team', true );
 
-	if ( ! $existing_team ) {
-		$existing_team = '';
+	if ( ! $existing_teams ) {
+		$existing_teams = array();
 	}
 
 	$available_teams = get_terms( array(
@@ -444,20 +448,27 @@ function ghactivity_actor_team_field( $tag, $taxonomy ) {
 	echo '<td>';
 
 	wp_nonce_field( basename( __FILE__ ), 'ghactor_team_nonce' );
-	echo '<select class="postform" id="team-group" name="team">';
-	printf(
-		'<option value="-1">%s</option>',
-		esc_html__( 'None', 'ghactivity' )
-	);
 	foreach ( $available_teams as $id => $team_name ) {
-		printf(
-			'<option value="%1$s" class="" %2$s>%1$s</option>',
-			esc_html( $team_name ),
-			selected( $team_name, $existing_team, false )
-		);
-	}
-	echo '</select>';
+		echo '<div style="display:block">';
+		// backward compatibility after #7.
+		if ( ! is_array( $existing_teams ) ) {
+			$checked = checked( $team_name, $existing_teams, false );
+		} else {
+			$checked = checked( in_array( $team_name, $existing_teams, true ), true, false );
+		}
 
+		printf(
+			'<input type="checkbox" class="label" id="%1$s" name="team[]" value="%1$s" class="" %2$s></label>',
+			esc_html( $team_name ),
+			esc_html( $checked )
+		);
+		printf(
+			'<label for="%1$s" class="label"
+			>%1$s</label>',
+			esc_html( $team_name )
+		);
+		echo '</div>';
+	}
 	echo '</td></tr>';
 }
 add_action( 'ghactivity_actor_edit_form_fields', 'ghactivity_actor_team_field', 10, 2 );
@@ -478,7 +489,7 @@ function ghactivity_actor_team_save_field( $term_id ) {
 	}
 
 	if ( ! empty( $_POST['team'] ) ) {
-		update_term_meta( $term_id, 'team', sanitize_text_field( $_POST['team'] ) );
+		update_term_meta( $term_id, 'team', array_map( 'sanitize_text_field', $_POST['team'] ) );
 	}
 }
 add_action( 'edit_ghactivity_actor', 'ghactivity_actor_team_save_field' );
