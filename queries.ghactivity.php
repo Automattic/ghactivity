@@ -121,6 +121,8 @@ class GHActivity_Queries {
 			'post_type'      => 'gh_query_record',
 			'post_status'    => 'publish',
 			'posts_per_page' => -1,
+			'orderby'        => 'date',
+			'order'          => 'ASC',
 			'tax_query'      => array(
 				array(
 					'taxonomy' => 'ghactivity_query_label_slug',
