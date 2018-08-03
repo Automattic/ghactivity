@@ -741,7 +741,7 @@ function ghactivity_register_query_records_post_type() {
 	) );
 
 	/**
-	 * FIXME: Blah blah
+	 * Register Query Record Label Slug
 	 *
 	 * @since 2.1.0
 	 */
