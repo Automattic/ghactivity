@@ -22,7 +22,6 @@ add_shortcode( 'ghactivity_average_label_time', 'output_average_label_time' );
  * @param array $atts Array of shortcode attributes.
  */
 function output_average_label_time( $atts ) {
-	error_log( print_r( $atts, 1 ) );
 	$atts = shortcode_atts( array(
 		'repo'  => '',
 		'label' => '',
