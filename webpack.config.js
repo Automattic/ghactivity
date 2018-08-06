@@ -6,6 +6,7 @@ const webpackConfig = {
 
 	entry: {
 		'shortcodes/repo-activity': path.resolve(__dirname, 'shortcodes/js/repo-activity.js'),
+		'shortcodes/average-label-time': path.resolve(__dirname, 'shortcodes/js/average-label-time.js'),
 		// 'shortcodes/main-report': path.resolve(__dirname, 'shortcodes/js/main-report.js'),
 		// 'shortcodes/team-activity': path.resolve(__dirname, 'shortcodes/js/team-activity.js'),
 	},
@@ -24,18 +25,17 @@ const webpackConfig = {
 			test: /\.jsx?$/,
 			exclude: /node_modules/,
 			loader: 'babel-loader',
-		}, ],
+		},
+		{
+			test: /\.css$/,
+			loader: "style-loader!css-loader?importLoaders=1"
+		},
+		{
+			test: /\.(png|woff|woff2|eot|ttf|svg)$/,
+      loader: 'url-loader?limit=1024&name=/fonts/[name].[ext]'
+    }
+	],
 	},
 };
-
-if (process.env.NODE_ENV === 'production') {
-	// When running in production, we want to use the minified script so that the file is smaller
-	webpackConfig.plugins.push(new webpack.optimize.UglifyJsPlugin({
-		compress: {
-			warnings: false
-		}
-	}));
-
-}
 
 module.exports = webpackConfig;

@@ -44,6 +44,23 @@ class Ghactivity_Api {
 				),
 			),
 		) );
+
+		/**
+		 * Get query records of specific repo/label.
+		 *
+		 * @since 2.1.0
+		 */
+		register_rest_route( 'ghactivity/v1', '/queries/average-label-time/repo/(?P<repo>[0-9a-z\-_\/]+)', array(
+			'methods'             => WP_REST_Server::READABLE,
+			'callback'            => array( $this, 'get_average_label_time' ),
+			'permission_callback' => array( $this, 'permissions_check' ),
+			'args'                => array(
+				'repo' => array(
+					'required'          => true,
+					'validate_callback' => array( $this, 'validate_string' ),
+				),
+			),
+		) );
 	}
 
 	/**
@@ -191,6 +208,39 @@ class Ghactivity_Api {
 			'actors_this_day'   => $actors_this_day,
 			'actors_this_week'  => $actors_this_week,
 			'actors_this_month' => $actors_this_month,
+		);
+		return new WP_REST_Response( $response, 200 );
+	}
+
+	/**
+	 * Get an average label time for specified repo/label
+	 *
+	 * @since 2.1.0
+	 *
+	 * @param WP_REST_Request $request Full details about the request.
+	 *
+	 * @return WP_REST_Response $response Stats for a specific repo.
+	 */
+	public function get_average_label_time( $request ) {
+		if ( isset( $request['repo'] ) && isset( $request->get_query_params()['label'] ) ) {
+			$repo  = esc_html( $request['repo'] );
+			$label = esc_html( $request->get_query_params()['label'] );
+		} else {
+			return new WP_Error(
+				'not_found',
+				esc_html__( 'You did not specify a valid GitHub repo and/or issue label', 'ghactivity' ),
+				array(
+					'status' => 404,
+				)
+			);
+		}
+
+		$records = GHActivity_Queries::fetch_average_label_time( $repo, $label );
+
+		$response = array(
+			'repo'    => $repo,
+			'label'   => $label,
+			'records' => $records,
 		);
 		return new WP_REST_Response( $response, 200 );
 	}
