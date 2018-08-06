@@ -144,7 +144,7 @@ class GHActivity_Queries {
 		$posts = get_posts( $args );
 
 		function get_post_content( $post ) {
-			return array( (int) $post->post_content, strtotime( $post->post_date ) );
+			return array( (int) $post->post_content, strtotime( $post->post_date ), get_post_meta( 2900, 'record_slugs', true ) );
 		}
 		return array_map( 'get_post_content', $posts );
 	}
