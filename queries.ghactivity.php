@@ -140,6 +140,7 @@ class GHActivity_Queries {
 			);
 		}
 
+		// FIXME: Add caching
 		$posts = get_posts( $args );
 
 		function get_post_content( $post ) {
