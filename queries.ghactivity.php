@@ -30,8 +30,9 @@ class GHActivity_Queries {
 
 				// We want to capture only opened, labeled issues.
 				if ( $post_id && 'labeled' === $label_ary['status'] ) {
-					$dates[] = time() - strtotime( $label_ary['labeled'] );
-					$slugs[] = $repo_slug;
+					$time                = time() - strtotime( $label_ary['labeled'] );
+					$dates[]             = $time;
+					$slugs[ $repo_slug ] = $time;
 				}
 			}
 		}

@@ -54,12 +54,15 @@ class AverageLabelTime extends Component {
 			)
 		}
 
-		records[ records.length - 1	][2].forEach(issueSlug => {
+		const issueSlugs = Object.entries(records[ records.length - 1	][2]);
+		issueSlugs.sort( (a, b) => b[1] - a[1] ) // Sort from older to newer
+		issueSlugs.forEach( ( [issueSlug, time], id  ) => {
 			const [ repoName, issueNumber ] = issueSlug.split('#')
 			const href = `https://github.com/${repoName}/pull/${issueNumber}`
+			const timeString = Math.round(time / 60 / 60 / 24) + ' days'
 			issues.push(
-				<li>
-					<a href={href} >#{issueNumber}</a>
+				<li key={id} >
+					<a href={href} >#{issueNumber}</a>  <span>{timeString}</span>
 				</li>
 			)
 		});
