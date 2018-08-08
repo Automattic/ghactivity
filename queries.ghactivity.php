@@ -30,8 +30,9 @@ class GHActivity_Queries {
 
 				// We want to capture only opened, labeled issues.
 				if ( $post_id && 'labeled' === $label_ary['status'] ) {
-					$dates[] = time() - strtotime( $label_ary['labeled'] );
-					$slugs[] = $repo_slug;
+					$time                = time() - strtotime( $label_ary['labeled'] );
+					$dates[]             = $time;
+					$slugs[ $repo_slug ] = $time;
 				}
 			}
 		}
@@ -144,7 +145,11 @@ class GHActivity_Queries {
 		$posts = get_posts( $args );
 
 		function get_post_content( $post ) {
-			return array( (int) $post->post_content, strtotime( $post->post_date ) );
+			return array(
+				(int) $post->post_content,
+				strtotime( $post->post_date ),
+				get_post_meta( $post->ID, 'record_slugs', true ),
+			);
 		}
 		return array_map( 'get_post_content', $posts );
 	}

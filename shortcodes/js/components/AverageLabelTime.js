@@ -44,7 +44,28 @@ class AverageLabelTime extends Component {
 		const { records } = this.state;
 		const labels = [];
 		const data = [];
+		const issues = [];
 
+		if ( !records || records.length === 0 ) {
+			return (
+				<div>
+					Loading...
+				</div>
+			)
+		}
+
+		const issueSlugs = Object.entries(records[ records.length - 1	][2]);
+		issueSlugs.sort( (a, b) => b[1] - a[1] ) // Sort from older to newer
+		issueSlugs.forEach( ( [issueSlug, time], id  ) => {
+			const [ repoName, issueNumber ] = issueSlug.split('#')
+			const href = `https://github.com/${repoName}/pull/${issueNumber}`
+			const timeString = Math.round(time / 60 / 60 / 24) + ' days'
+			issues.push(
+				<li key={id} >
+					<a href={href} >#{issueNumber}</a>  <span>{timeString}</span>
+				</li>
+			)
+		});
 		records.forEach( r => {
 			data.push( r[ 0 ] / 60 / 60 / 24 ); // Convert seconds into days
 			labels.push( new Date( r[ 1 ] * 1000 ).toDateString() );
@@ -78,7 +99,11 @@ class AverageLabelTime extends Component {
 		return (
 			<div>
 				<Line data={ chartArgs } />
+				<ul>
+					{issues}
+				</ul>
 			</div>
+
 		);
 	}
 }
