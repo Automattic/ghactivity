@@ -1102,10 +1102,8 @@ class GHActivity_Calls {
 				continue;
 			} elseif ( 'labeled' === $event->event ) { // Add missing labels if needed.
 				wp_set_post_terms( $post_id, $event->label->name, 'ghactivity_issues_labels', true );
-				continue;
 			} elseif ( 'unlabeled' === $event->event ) {
 				wp_remove_object_terms( $post_id, $event->label->name, 'ghactivity_issues_labels' );
-				continue;
 			}
 
 			$terms = wp_get_post_terms( $post_id, 'ghactivity_issues_labels' );
