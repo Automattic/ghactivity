@@ -1115,7 +1115,7 @@ class GHActivity_Calls {
 				'name'     => $event->label->name,
 			);
 			$term  = get_terms( $query );
-			if ( is_wp_error( $term ) ) {
+			if ( ! is_array( $term ) || empty( $term ) ) {
 				continue;
 			}
 			$term = $term[0];
