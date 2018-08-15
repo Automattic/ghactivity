@@ -1094,23 +1094,33 @@ class GHActivity_Calls {
 				continue;
 			}
 
+			// If issue is closed/reopened - update ghactivity_issues_state accordingly, and continue to next event.
 			if ( 'closed' === $event->event ) {
 				wp_set_post_terms( $post_id, 'closed', 'ghactivity_issues_state', false );
 				continue;
 			} elseif ( 'reopened' === $event->event ) {
 				wp_set_post_terms( $post_id, 'open', 'ghactivity_issues_state', false );
 				continue;
-			} elseif ( 'labeled' === $event->event ) { // Add missing labels if needed.
-				wp_set_post_terms( $post_id, $event->label->name, 'ghactivity_issues_labels', true );
-				continue;
-			} elseif ( 'unlabeled' === $event->event ) {
-				wp_remove_object_terms( $post_id, $event->label->name, 'ghactivity_issues_labels' );
-				continue;
 			}
 
-			$terms = wp_get_post_terms( $post_id, 'ghactivity_issues_labels' );
+			// Update label list according to event data.
+			if ( 'labeled' === $event->event ) { // Add missing labels if needed.
+				wp_set_post_terms( $post_id, $event->label->name, 'ghactivity_issues_labels', true );
+			} elseif ( 'unlabeled' === $event->event ) {
+				wp_remove_object_terms( $post_id, $event->label->name, 'ghactivity_issues_labels' );
+			}
 
+			$query = array(
+				'taxonomy' => 'ghactivity_issues_labels',
+				'name'     => $event->label->name,
+			);
+			$term  = get_terms( $query );
+			if ( is_wp_error( $term ) ) {
+				continue;
+			}
+			$term = $term[0];
 			/**
+			 * If this is labeled/unlabeled event - update label meta to include event data.
 			 * Since ghactivity_issues_labels terms are shared between all the issues
 			 * we need to store term metadata (label status, labeled/unlabeled date) as an array
 			 * Expected key/value pair:
@@ -1120,21 +1130,17 @@ class GHActivity_Calls {
 			 *    'unlabeled' => null,
 			 *  ]
 			 */
-			foreach ( $terms as $term ) {
-				if ( $term->name === $event->label->name ) {
-					$record = array(
-						'status'    => null,
-						'labeled'   => null,
-						'unlabeled' => null,
-					);
-					if ( metadata_exists( 'term', $term->term_id, $slug ) ) {
-						$record = get_term_meta( $term->term_id, $slug, true );
-					}
-					$record['status']        = $event->event;
-					$record[ $event->event ] = $event->created_at;
-					update_term_meta( $term->term_id, $slug, $record );
-				}
+			$record = array(
+				'status'    => null,
+				'labeled'   => null,
+				'unlabeled' => null,
+			);
+			if ( metadata_exists( 'term', $term->term_id, $slug ) ) {
+				$record = get_term_meta( $term->term_id, $slug, true );
 			}
+			$record['status']        = $event->event;
+			$record[ $event->event ] = $event->created_at;
+			update_term_meta( $term->term_id, $slug, $record );
 		}
 	}
 
