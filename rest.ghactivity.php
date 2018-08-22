@@ -235,7 +235,7 @@ class Ghactivity_Api {
 			);
 		}
 
-		// [average_time, date_or_record, recorded_issues]
+		// [average_time, date_of_record, recorded_issues]
 		$records = GHActivity_Queries::fetch_average_label_time( $repo, $label );
 
 		$response = array(
