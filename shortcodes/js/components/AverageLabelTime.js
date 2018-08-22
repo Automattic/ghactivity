@@ -40,10 +40,10 @@ class AverageLabelTime extends Component {
 	}
 
 	render() {
-		const { repo, label } = this.props;
 		const { records } = this.state;
 		const labels = [];
-		const data = [];
+		const avgTimeData = [];
+		const issuesNumData = [];
 		const issues = [];
 
 		if ( !records || records.length === 0 ) {
@@ -66,16 +66,18 @@ class AverageLabelTime extends Component {
 				</li>
 			)
 		});
-		records.forEach( r => {
-			data.push( r[ 0 ] / 60 / 60 / 24 ); // Convert seconds into days
-			labels.push( new Date( r[ 1 ] * 1000 ).toDateString() );
+		records.forEach( ( [avgTime, recordDate, recordedIssues] ) => {
+			avgTimeData.push( Math.round( avgTime / 60 / 60 / 24 ) ); // Convert seconds into days
+			labels.push( new Date( recordDate * 1000 ).toDateString() );
+			issuesNumData.push( Object.values( recordedIssues ).length );
 		} );
 		const chartArgs = {
 			labels,
 			datasets: [
 				{
-					data,
-					label: `${ repo } :: ${ label }`,
+					data: avgTimeData,
+					yAxisID: 'A',
+					label: 'Average time',
 					fill: false,
 					lineTension: 0.1,
 					backgroundColor: 'rgba(75,192,192,0.4)',
@@ -94,11 +96,48 @@ class AverageLabelTime extends Component {
 					pointRadius: 1,
 					pointHitRadius: 10,
 				},
+				{
+					data: issuesNumData,
+					yAxisID: 'B',
+					label: 'Number of issues',
+					fill: false,
+					lineTension: 0.1,
+					backgroundColor: 'rgba(75,43,192,0.4)',
+					borderColor: 'rgba(75,42,192,1)',
+					borderCapStyle: 'butt',
+					borderDash: [],
+					borderDashOffset: 0.0,
+					borderJoinStyle: 'miter',
+					pointBorderColor: 'rgba(75,43,192,1)',
+					pointBackgroundColor: '#fff',
+					pointBorderWidth: 1,
+					pointHoverRadius: 5,
+					pointHoverBackgroundColor: 'rgba(75,43,192,1)',
+					pointHoverBorderColor: 'rgba(220,220,220,1)',
+					pointHoverBorderWidth: 2,
+					pointRadius: 1,
+					pointHitRadius: 10,
+				},
 			],
 		};
+
+		const chartOpts = {
+			scales: {
+				yAxes: [{
+					id: 'A',
+					type: 'linear',
+					position: 'left',
+				}, {
+					id: 'B',
+					type: 'linear',
+					position: 'right',
+				}]
+			}
+		}
+
 		return (
 			<div>
-				<Line data={ chartArgs } />
+				<Line data={ chartArgs } options={ chartOpts} />
 				<ul>
 					{issues}
 				</ul>
