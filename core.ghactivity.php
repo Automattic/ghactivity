@@ -171,12 +171,63 @@ class GHActivity_Calls {
 
 		// Build the array of data we will save.
 		$gh_user_details = array(
-			'name'       => esc_html( $nicename ),
-			'avatar_url' => esc_url( $person_info_body->avatar_url ),
-			'bio'        => esc_html( $person_info_body->bio ),
+			'name'        => esc_html( $nicename ),
+			'avatar_url'  => esc_url( $person_info_body->avatar_url ),
+			'bio'         => esc_html( $person_info_body->bio ),
+			'is_employee' => (bool) $this->is_company_member( $person_info_body->login ),
 		);
 
 		return $gh_user_details;
+	}
+
+	/**
+	 * Does a GitHub user belong to a specific organization?
+	 *
+	 * @since 2.0.0
+	 *
+	 * @param string $gh_username GitHub username.
+	 *
+	 * @return bool false Does the person belongs to a specific organization? Default to false.
+	 */
+	private function is_company_member( $gh_username ) {
+		if ( empty( $gh_username ) ) {
+			return false;
+		}
+
+		// Let's get some info from GitHub.
+		$query_url = sprintf(
+			'https://api.github.com/users/%1$s/orgs?access_token=%2$s',
+			$gh_username,
+			$this->get_option( 'access_token' )
+		);
+		$person_orgs_body = $this->get_github_data( $query_url );
+
+		/**
+		 * Define your own organization name here.
+		 * It will allow you to filter people that belong to your organization.
+		 *
+		 * @since 2.0.0
+		 *
+		 * @param null|string $org_name Name of your organization, as it appears in the organization you've set up on GitHub.
+		 */
+		$org_name = apply_filters( 'ghactivity_organization_slug', null );
+
+		/**
+		 * Does the list of organizations include the one you've defined in the filter?
+		 * If so, return true.
+		 */
+		if (
+			! empty( $person_orgs_body )
+			&& ! empty( $org_name )
+		) {
+			foreach ( $person_orgs_body as $org => $org_detail ) {
+				if ( $org_detail->login === $org_name ) {
+					return true;
+				}
+			}
+		}
+
+		return false;
 	}
 
 	/**
