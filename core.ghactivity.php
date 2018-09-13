@@ -43,6 +43,33 @@ class GHActivity_Calls {
 	}
 
 	/**
+	 * Remote call utility function for GitHub.
+	 *
+	 * @since 2.0.0
+	 *
+	 * @param string $query_url GitHub API URL to hit.
+	 *
+	 * @return array $response_body Response body for each call.
+	 */
+	private function get_github_data( $query_url ) {
+		$response_body = array();
+
+		$data = wp_remote_get( esc_url_raw( $query_url ) );
+
+		if (
+			is_wp_error( $data )
+			|| 200 != $data['response']['code']
+			|| empty( $data['body'] )
+		) {
+			return $response_body;
+		}
+
+		$response_body = json_decode( $data['body'] );
+
+		return $response_body;
+	}
+
+	/**
 	 * Remote call to get data from GitHub's API.
 	 *
 	 * @since 1.0
@@ -66,18 +93,7 @@ class GHActivity_Calls {
 				$username,
 				$this->get_option( 'access_token' )
 			);
-
-			$data = wp_remote_get( esc_url_raw( $query_url ) );
-
-			if (
-				is_wp_error( $data )
-				|| 200 != $data['response']['code']
-				|| empty( $data['body'] )
-			) {
-				continue;
-			}
-
-			$single_response_body = json_decode( $data['body'] );
+			$single_response_body = $this->get_github_data( $query_url );
 
 			$response_body = array_merge( $single_response_body, $response_body );
 		}
@@ -105,14 +121,11 @@ class GHActivity_Calls {
 	 *
 	 * @param string $repo_name Name of the repo we want data from.
 	 *
-	 * @return null|array
+	 * @return array
 	 */
-	private function get_repo_activity( $repo_name ) {
-
-		$response_body = array();
-
+	private function get_repo_activity( $repo_name = '' ) {
 		if ( empty( $repo_name ) ) {
-			return $response_body;
+			return array();
 		}
 
 		$query_url = sprintf(
@@ -121,19 +134,7 @@ class GHActivity_Calls {
 			$this->get_option( 'access_token' )
 		);
 
-		$data = wp_remote_get( esc_url_raw( $query_url ) );
-
-		if (
-			is_wp_error( $data )
-			|| 200 != $data['response']['code']
-			|| empty( $data['body'] )
-		) {
-			return $response_body;
-		}
-
-		$response_body = json_decode( $data['body'] );
-
-		return $response_body;
+		return $this->get_github_data( $query_url );
 	}
 
 	/**
@@ -146,10 +147,8 @@ class GHActivity_Calls {
 	 * @return array $gh_user_details Details about a GitHub user.
 	 */
 	private function get_person_details( $gh_username = '' ) {
-		$gh_user_details = array();
-
 		if ( empty( $gh_username ) ) {
-			return $gh_user_details;
+			return array();
 		}
 
 		// Let's get some info from GitHub.
@@ -158,17 +157,7 @@ class GHActivity_Calls {
 			$gh_username,
 			$this->get_option( 'access_token' )
 		);
-		$data = wp_remote_get( esc_url_raw( $query_url ) );
-
-		if (
-			is_wp_error( $data )
-			|| 200 != $data['response']['code']
-			|| empty( $data['body'] )
-		) {
-			return $gh_user_details;
-		}
-
-		$person_info_body = json_decode( $data['body'] );
+		$person_info_body = $this->get_github_data( $query_url );
 
 		/**
 		 * Let's build a name based on the name field.
