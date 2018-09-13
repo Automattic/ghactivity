@@ -13,7 +13,7 @@
 
 defined( 'ABSPATH' ) || die( 'No script kiddies please!' );
 
-define( 'GHACTIVITY__VERSION', '2.0.0-alpha' );
+defined( 'GHACTIVITY__VERSION' ) || define( 'GHACTIVITY__VERSION', '2.0.0-alpha' );
 define( 'GHACTIVITY__PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 
 class Jeherve_GHActivity {
