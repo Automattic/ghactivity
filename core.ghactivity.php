@@ -391,6 +391,9 @@ class GHActivity_Calls {
 	 * @since 1.0
 	 */
 	public function publish_event() {
+		// Avoid timeouts during the data import process.
+		set_time_limit( 0 );
+
 		$github_events = $this->get_github_activity();
 
 		/**
