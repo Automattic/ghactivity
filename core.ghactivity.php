@@ -743,7 +743,7 @@ class GHActivity_Calls {
 	 */
 	public function update_issue_records( $event_list = null, $options = null ) {
 		if ( ! is_array( $event_list ) && ! is_array( $options ) ) {
-			$event_list = $this->get_all_github_issue_events();
+			$event_list = $this->get_github_issue_events();
 		}
 
 		if ( ! isset( $event_list ) || ! is_array( $event_list ) ) {
@@ -874,50 +874,34 @@ class GHActivity_Calls {
 	 *
 	 * @since 2.1.0
 	 *
-	 * @return null|array
-	 */
-	public function get_all_github_issue_events() {
-		$response_body    = array();
-		$repos_to_monitor = $this->get_monitored_repos( 'names' );
-		if ( empty( $repos_to_monitor ) ) {
-			return $response_body;
-		}
-		foreach ( $repos_to_monitor as $repo_name ) {
-			$single_response_body = $this->get_github_issue_events( $repo_name );
-			$response_body        = array_merge( $single_response_body, $response_body );
-		}
-		return $response_body;
-	}
-
-	/**
-	 * Remote call to get label events for specific repo and issue.
-	 *
-	 * @param string $repo_name name of the repo.
+	 * @param string $repo         name of the repo.
 	 * @param int    $issue_number issue number.
 	 *
-	 * @since 2.1.0
-	 *
-	 * @return null|array
+	 * @return array
 	 */
-	public function get_github_issue_events( $repo_name, $issue_number = null ) {
-		$response_body = array();
-		$query_url     = sprintf(
-			'https://api.github.com/repos/%1$s/issues%2$s/events?access_token=%3$s&per_page=100',
-			esc_html( $repo_name ),
-			esc_html( $issue_number ? '/' . $issue_number : '' ),
-			$this->get_option( 'access_token' )
-		);
+	public function get_github_issue_events( $repo = null, $issue_number = null ) {
+		$response_body    = array();
 
-		$data = wp_remote_get( esc_url_raw( $query_url ) );
-		if (
-			is_wp_error( $data )
-			|| 200 !== $data['response']['code']
-			|| empty( $data['body'] )
-		) {
-			return $response_body;
+		if ( empty( $repo ) ) {
+			$repos_to_query = $this->get_monitored_repos( 'names' );
+			if ( empty( $repos_to_query ) ) {
+				return $response_body;
+			}
+		} else {
+			$repos_to_query = array( $repo );
 		}
 
-		$response_body = json_decode( $data['body'] );
+		foreach ( $repos_to_query as $repo_name ) {
+			$query_url     = sprintf(
+				'https://api.github.com/repos/%1$s/issues%2$s/events?access_token=%3$s&per_page=100',
+				esc_html( $repo_name ),
+				esc_html( $issue_number ? '/' . $issue_number : '' ),
+				$this->get_option( 'access_token' )
+			);
+			$single_response_body = $this->get_github_data( $query_url );
+
+			$response_body        = array_merge( $single_response_body, $response_body );
+		}
 		return $response_body;
 	}
 }
