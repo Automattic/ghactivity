@@ -43,6 +43,33 @@ class GHActivity_Calls {
 	}
 
 	/**
+	 * Remote call utility function for GitHub.
+	 *
+	 * @since 2.0.0
+	 *
+	 * @param string $query_url GitHub API URL to hit.
+	 *
+	 * @return array $response_body Response body for each call.
+	 */
+	private function get_github_data( $query_url ) {
+		$response_body = array();
+
+		$data = wp_remote_get( esc_url_raw( $query_url ) );
+
+		if (
+			is_wp_error( $data )
+			|| 200 != $data['response']['code']
+			|| empty( $data['body'] )
+		) {
+			return $response_body;
+		}
+
+		$response_body = json_decode( $data['body'] );
+
+		return $response_body;
+	}
+
+	/**
 	 * Remote call to get data from GitHub's API.
 	 *
 	 * @since 1.0
@@ -66,18 +93,7 @@ class GHActivity_Calls {
 				$username,
 				$this->get_option( 'access_token' )
 			);
-
-			$data = wp_remote_get( esc_url_raw( $query_url ) );
-
-			if (
-				is_wp_error( $data )
-				|| 200 != $data['response']['code']
-				|| empty( $data['body'] )
-			) {
-				continue;
-			}
-
-			$single_response_body = json_decode( $data['body'] );
+			$single_response_body = $this->get_github_data( $query_url );
 
 			$response_body = array_merge( $single_response_body, $response_body );
 		}
@@ -105,14 +121,11 @@ class GHActivity_Calls {
 	 *
 	 * @param string $repo_name Name of the repo we want data from.
 	 *
-	 * @return null|array
+	 * @return array
 	 */
-	private function get_repo_activity( $repo_name ) {
-
-		$response_body = array();
-
+	private function get_repo_activity( $repo_name = '' ) {
 		if ( empty( $repo_name ) ) {
-			return $response_body;
+			return array();
 		}
 
 		$query_url = sprintf(
@@ -121,19 +134,7 @@ class GHActivity_Calls {
 			$this->get_option( 'access_token' )
 		);
 
-		$data = wp_remote_get( esc_url_raw( $query_url ) );
-
-		if (
-			is_wp_error( $data )
-			|| 200 != $data['response']['code']
-			|| empty( $data['body'] )
-		) {
-			return $response_body;
-		}
-
-		$response_body = json_decode( $data['body'] );
-
-		return $response_body;
+		return $this->get_github_data( $query_url );
 	}
 
 	/**
@@ -146,10 +147,8 @@ class GHActivity_Calls {
 	 * @return array $gh_user_details Details about a GitHub user.
 	 */
 	private function get_person_details( $gh_username = '' ) {
-		$gh_user_details = array();
-
 		if ( empty( $gh_username ) ) {
-			return $gh_user_details;
+			return array();
 		}
 
 		// Let's get some info from GitHub.
@@ -158,17 +157,7 @@ class GHActivity_Calls {
 			$gh_username,
 			$this->get_option( 'access_token' )
 		);
-		$data = wp_remote_get( esc_url_raw( $query_url ) );
-
-		if (
-			is_wp_error( $data )
-			|| 200 != $data['response']['code']
-			|| empty( $data['body'] )
-		) {
-			return $gh_user_details;
-		}
-
-		$person_info_body = json_decode( $data['body'] );
+		$person_info_body = $this->get_github_data( $query_url );
 
 		/**
 		 * Let's build a name based on the name field.
@@ -182,12 +171,63 @@ class GHActivity_Calls {
 
 		// Build the array of data we will save.
 		$gh_user_details = array(
-			'name'       => esc_html( $nicename ),
-			'avatar_url' => esc_url( $person_info_body->avatar_url ),
-			'bio'        => esc_html( $person_info_body->bio ),
+			'name'        => esc_html( $nicename ),
+			'avatar_url'  => esc_url( $person_info_body->avatar_url ),
+			'bio'         => esc_html( $person_info_body->bio ),
+			'is_employee' => (bool) $this->is_company_member( $person_info_body->login ),
 		);
 
 		return $gh_user_details;
+	}
+
+	/**
+	 * Does a GitHub user belong to a specific organization?
+	 *
+	 * @since 2.0.0
+	 *
+	 * @param string $gh_username GitHub username.
+	 *
+	 * @return bool false Does the person belongs to a specific organization? Default to false.
+	 */
+	private function is_company_member( $gh_username ) {
+		if ( empty( $gh_username ) ) {
+			return false;
+		}
+
+		// Let's get some info from GitHub.
+		$query_url = sprintf(
+			'https://api.github.com/users/%1$s/orgs?access_token=%2$s',
+			$gh_username,
+			$this->get_option( 'access_token' )
+		);
+		$person_orgs_body = $this->get_github_data( $query_url );
+
+		/**
+		 * Define your own organization name here.
+		 * It will allow you to filter people that belong to your organization.
+		 *
+		 * @since 2.0.0
+		 *
+		 * @param null|string $org_name Name of your organization, as it appears in the organization you've set up on GitHub.
+		 */
+		$org_name = apply_filters( 'ghactivity_organization_slug', null );
+
+		/**
+		 * Does the list of organizations include the one you've defined in the filter?
+		 * If so, return true.
+		 */
+		if (
+			! empty( $person_orgs_body )
+			&& ! empty( $org_name )
+		) {
+			foreach ( $person_orgs_body as $org => $org_detail ) {
+				if ( $org_detail->login === $org_name ) {
+					return true;
+				}
+			}
+		}
+
+		return false;
 	}
 
 	/**
@@ -402,6 +442,9 @@ class GHActivity_Calls {
 	 * @since 1.0
 	 */
 	public function publish_event() {
+		// Avoid timeouts during the data import process.
+		set_time_limit( 0 );
+
 		$github_events = $this->get_github_activity();
 
 		/**
@@ -563,9 +606,9 @@ class GHActivity_Calls {
 								if (
 									is_array( $term_id_object )
 									&& 'ghactivity_actor' === $term_id_object['taxonomy']
-									&& empty( get_term_meta( $term_id, 'github_info', true ) )
+									//&& empty( get_term_meta( $term_id, 'github_info', true ) )
 								) {
-									$gh_user_details = $this->get_person_details( $term_id_object['name'] );
+									$gh_user_details = $this->get_person_details( $term_id_object['slug'] );
 									if ( ! empty( $gh_user_details ) ) {
 										// Add a bio and change the nice name.
 										$person_args = array(
@@ -730,314 +773,6 @@ class GHActivity_Calls {
 	}
 
 	/**
-	 * Count Posts per event type.
-	 *
-	 * @since 1.1
-	 *
-	 * @param string       $date_start      Starting date range, using a strtotime compatible format.
-	 * @param string       $date_end        End date range, using a strtotime compatible format.
-	 * @param string       $person          Get stats for a specific GitHub username.
-	 * @param string|array $repo            Get stats for a specific GitHub repo, or a list of repos.
-	 * @param bool         $split_per_actor Split counts per actor.
-	 *
-	 * @return array       $count           Array of count of registered Event types.
-	 */
-	public static function count_posts_per_event_type( $date_start, $date_end, $person = '', $repo = '', $split_per_actor = false ) {
-		$count = array();
-
-		if ( empty( $person ) ) {
-			$person = get_terms( array(
-				'taxonomy'   => 'ghactivity_actor',
-				'hide_empty' => false,
-			) );
-
-			$person = wp_list_pluck( $person, 'name' );
-		} elseif ( is_string( $person ) ) {
-			$person = esc_html( $person );
-		} elseif ( is_array( $person ) ) {
-			$person = $person;
-		}
-
-		if ( empty( $repo ) ) {
-			$repo = get_terms( array(
-				'taxonomy'   => 'ghactivity_repo',
-				'hide_empty' => true,
-				'fields'     => 'id=>slug',
-			) );
-
-			$repo = array_values( $repo );
-		} elseif ( is_string( $repo ) ) {
-			$repo = esc_html( $repo );
-		} elseif ( is_array( $repo ) ) {
-			$repo = $repo;
-		}
-
-		$args = array(
-			'post_type'      => 'ghactivity_event',
-			'post_status'    => 'publish',
-			'posts_per_page' => -1,  // Show all posts.
-			'date_query'     => array(
-				'after' => $date_start,
-				'before' => $date_end,
-				'inclusive' => true,
-			),
-			'tax_query'      => array(
-				'relation' => 'AND',
-				array(
-					'taxonomy' => 'ghactivity_actor',
-					'field'    => 'name',
-					'terms'    => $person,
-				),
-				array(
-					'taxonomy' => 'ghactivity_repo',
-					'field'    => 'slug',
-					'terms'    => $repo,
-				),
-			),
-		);
-		/**
-		 * Filter WP Query arguments used to count Posts per event type.
-		 *
-		 * @since 1.2
-		 *
-		 * @param array $args Array of WP Query arguments.
-		 */
-		$args = apply_filters( 'ghactivity_count_posts_event_type_query_args', $args );
-
-		// Start a Query.
-		$query = new WP_Query( $args );
-
-		while ( $query->have_posts() ) {
-			$query->the_post();
-
-			$terms = get_the_terms( $query->post->ID, 'ghactivity_event_type' );
-
-			/**
-			 * If we want to split the counts per actor,
-			 * we need to create an multidimensional array,
-			 * with counts for each person.
-			 */
-			if ( true === $split_per_actor ) {
-				$actor = get_the_terms( $query->post->ID, 'ghactivity_actor' );
-				if (
-					$terms
-					&& ! is_wp_error( $terms )
-					&& $actor
-					&& ! is_wp_error( $actor )
-				) {
-					// Get the person's name.
-					foreach ( $actor as $a ) {
-						$actor_name = esc_html( $a->name );
-					}
-
-					if ( ! isset( $count[ $actor_name ] ) ) {
-						$count[ $actor_name ] = array();
-					}
-					foreach ( $terms as $term ) {
-						if ( isset( $count[ $actor_name ][ $term->slug ] ) ) {
-							$count[ $actor_name ][ $term->slug ]++;
-						} else {
-							$count[ $actor_name ][ $term->slug ] = 1;
-						}
-
-						if ( isset( $count[ $actor_name ]['total'] ) ) {
-							$count[ $actor_name ]['total']++;
-						} else {
-							$count[ $actor_name ]['total'] = 1;
-						}
-					}
-				}
-			} else {
-				if ( $terms && ! is_wp_error( $terms ) ) {
-					foreach ( $terms as $term ) {
-						if ( isset( $count[ $term->slug ] ) ) {
-							$count[ $term->slug ]++;
-						} else {
-							$count[ $term->slug ] = 1;
-						}
-					}
-				}
-			} // End if().
-
-			/**
-			 * Filter the final array of event types and matching counts after calculation.
-			 *
-			 * Allows one to add their own a action, matching a specific term or Query element.
-			 *
-			 * @since 1.3
-			 *
-			 * @param array $count Array of count of registered Event types.
-			 */
-			$count = apply_filters( 'ghactivity_count_posts_event_type_counts', $count, $query );
-
-		} // End while().
-		wp_reset_postdata();
-
-		// Sort the actors by total descending.
-		if ( true === $split_per_actor ) {
-			uasort( $count, array( 'GHActivity_Calls', 'sort_totals' ) );
-		}
-
-		return (array) $count;
-	}
-
-	/**
-	 * Custom function to sort our counts.
-	 *
-	 * @since 1.6.0
-	 *
-	 * @param int $a Total number of contributions.
-	 * @param int $b Total number of contributions.
-	 */
-	private static function sort_totals( $a, $b ) {
-		return $a['total'] < $b['total'];
-	}
-
-	/**
-	 * Count number of commits.
-	 *
-	 * @since 1.1
-	 *
-	 * @param string $date_start Starting date range, using a strtotime compatible format.
-	 * @param string $date_end   End date range, using a strtotime compatible format.
-	 * @param string $person     Get stats for a specific GitHub username.
-	 *
-	 * @return int $count Number of commits during that time period.
-	 */
-	public static function count_commits( $date_start, $date_end, $person = '' ) {
-		$count = 0;
-
-		if ( empty( $person ) ) {
-			$person = get_terms( array(
-				'taxonomy'   => 'ghactivity_actor',
-				'hide_empty' => false,
-			) );
-
-			$person = wp_list_pluck( $person, 'name' );
-		} elseif ( is_array( $person ) ) {
-			$person = $person;
-		} else {
-			$person = esc_html( $person );
-		}
-
-		$args = array(
-			'post_type'      => 'ghactivity_event',
-			'post_status'    => 'publish',
-			'posts_per_page' => -1,  // Show all posts.
-			'meta_key'       => '_github_commits',
-			'date_query'     => array(
-				'after' => $date_start,
-				'before' => $date_end,
-				'inclusive' => true,
-			),
-			'tax_query'      => array(
-				array(
-					'taxonomy' => 'ghactivity_actor',
-					'field'    => 'name',
-					'terms'    => $person,
-				),
-			),
-		);
-		/**
-		 * Filter WP Query arguments used to count the number of commits in a specific date range.
-		 *
-		 * @since 1.2
-		 *
-		 * @param array $args Array of WP Query arguments.
-		 */
-		$args = apply_filters( 'ghactivity_count_commits_query_args', $args );
-
-		// Start a Query.
-		$query = new WP_Query( $args );
-
-		while ( $query->have_posts() ) {
-			$query->the_post();
-
-			$count = $count + get_post_meta( $query->post->ID, '_github_commits', true );
-
-		}
-		wp_reset_postdata();
-
-		return (int) $count;
-	}
-
-	/**
-	 * Count the number of repos where you were involved in a specific time period.
-	 *
-	 * @since 1.4
-	 *
-	 * @param string $date_start Starting date range, using a strtotime compatible format.
-	 * @param string $date_end   End date range, using a strtotime compatible format.
-	 * @param string $person     Get stats for a specific GitHub username.
-	 *
-	 * @return int $count Number of repos during that time period.
-	 */
-	public static function count_repos( $date_start, $date_end, $person = '' ) {
-		$repos = array();
-
-		if ( empty( $person ) ) {
-			$person = get_terms( array(
-				'taxonomy'   => 'ghactivity_actor',
-				'hide_empty' => false,
-			) );
-
-			$person = wp_list_pluck( $person, 'name' );
-		} elseif ( is_array( $person ) ) {
-			$person = $person;
-		} else {
-			$person = esc_html( $person );
-		}
-
-		$args = array(
-			'post_type'      => 'ghactivity_event',
-			'post_status'    => 'publish',
-			'posts_per_page' => -1,  // Show all posts.
-			'date_query'     => array(
-				'after' => $date_start,
-				'before' => $date_end,
-				'inclusive' => true,
-			),
-			'tax_query'      => array(
-				array(
-					'taxonomy' => 'ghactivity_actor',
-					'field'    => 'name',
-					'terms'    => $person,
-				),
-			),
-		);
-		/**
-		 * Filter WP Query arguments used to count the number of repos in a specific date range.
-		 *
-		 * @since 1.4
-		 *
-		 * @param array $args Array of WP Query arguments.
-		 */
-		$args = apply_filters( 'ghactivity_count_repos_query_args', $args );
-
-		// Start a Query.
-		$query = new WP_Query( $args );
-
-		while ( $query->have_posts() ) {
-			$query->the_post();
-
-			$terms = get_the_terms( $query->post->ID, 'ghactivity_repo' );
-
-			if ( $terms && ! is_wp_error( $terms ) ) {
-				foreach ( $terms as $term ) {
-					if ( isset( $repos[ $term->slug ] ) ) {
-						$repos[ $term->slug ]++;
-					} else {
-						$repos[ $term->slug ] = 1;
-					}
-				}
-			}
-		}
-		wp_reset_postdata();
-
-		return (int) count( $repos );
-	}
-
-	/**
 	 * Sort events by its creation date in ascending order
 	 *
 	 * @param Object $a Event object as it returned from Github API.
@@ -1059,7 +794,7 @@ class GHActivity_Calls {
 	 */
 	public function update_issue_records( $event_list = null, $options = null ) {
 		if ( ! is_array( $event_list ) && ! is_array( $options ) ) {
-			$event_list = $this->get_all_github_issue_events();
+			$event_list = $this->get_github_issue_events();
 		}
 
 		if ( ! isset( $event_list ) || ! is_array( $event_list ) ) {
@@ -1190,50 +925,34 @@ class GHActivity_Calls {
 	 *
 	 * @since 2.1.0
 	 *
-	 * @return null|array
-	 */
-	public function get_all_github_issue_events() {
-		$response_body    = array();
-		$repos_to_monitor = $this->get_monitored_repos( 'names' );
-		if ( empty( $repos_to_monitor ) ) {
-			return $response_body;
-		}
-		foreach ( $repos_to_monitor as $repo_name ) {
-			$single_response_body = $this->get_github_issue_events( $repo_name );
-			$response_body        = array_merge( $single_response_body, $response_body );
-		}
-		return $response_body;
-	}
-
-	/**
-	 * Remote call to get label events for specific repo and issue.
-	 *
-	 * @param string $repo_name name of the repo.
+	 * @param string $repo         name of the repo.
 	 * @param int    $issue_number issue number.
 	 *
-	 * @since 2.1.0
-	 *
-	 * @return null|array
+	 * @return array
 	 */
-	public function get_github_issue_events( $repo_name, $issue_number = null ) {
-		$response_body = array();
-		$query_url     = sprintf(
-			'https://api.github.com/repos/%1$s/issues%2$s/events?access_token=%3$s&per_page=100',
-			esc_html( $repo_name ),
-			esc_html( $issue_number ? '/' . $issue_number : '' ),
-			$this->get_option( 'access_token' )
-		);
+	public function get_github_issue_events( $repo = null, $issue_number = null ) {
+		$response_body    = array();
 
-		$data = wp_remote_get( esc_url_raw( $query_url ) );
-		if (
-			is_wp_error( $data )
-			|| 200 !== $data['response']['code']
-			|| empty( $data['body'] )
-		) {
-			return $response_body;
+		if ( empty( $repo ) ) {
+			$repos_to_query = $this->get_monitored_repos( 'names' );
+			if ( empty( $repos_to_query ) ) {
+				return $response_body;
+			}
+		} else {
+			$repos_to_query = array( $repo );
 		}
 
-		$response_body = json_decode( $data['body'] );
+		foreach ( $repos_to_query as $repo_name ) {
+			$query_url     = sprintf(
+				'https://api.github.com/repos/%1$s/issues%2$s/events?access_token=%3$s&per_page=100',
+				esc_html( $repo_name ),
+				esc_html( $issue_number ? '/' . $issue_number : '' ),
+				$this->get_option( 'access_token' )
+			);
+			$single_response_body = $this->get_github_data( $query_url );
+
+			$response_body        = array_merge( $single_response_body, $response_body );
+		}
 		return $response_body;
 	}
 }

@@ -13,7 +13,7 @@
 
 defined( 'ABSPATH' ) || die( 'No script kiddies please!' );
 
-define( 'GHACTIVITY__VERSION', '2.0.0-alpha' );
+defined( 'GHACTIVITY__VERSION' ) || define( 'GHACTIVITY__VERSION', '2.0.0-alpha' );
 define( 'GHACTIVITY__PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 
 class Jeherve_GHActivity {
@@ -45,8 +45,6 @@ class Jeherve_GHActivity {
 		// Load core functions.
 		require_once( GHACTIVITY__PLUGIN_DIR . 'core.ghactivity.php' );
 		require_once( GHACTIVITY__PLUGIN_DIR . 'cpt.ghactivity.php' );
-		require_once( GHACTIVITY__PLUGIN_DIR . 'charts.ghactivity.php' );
-		require_once( GHACTIVITY__PLUGIN_DIR . 'reports.ghactivity.php' );
 		require_once( GHACTIVITY__PLUGIN_DIR . 'rest.ghactivity.php' );
 		require_once( GHACTIVITY__PLUGIN_DIR . 'queries.ghactivity.php' );
 		require_once( GHACTIVITY__PLUGIN_DIR . 'schedule.ghactivity.php' );

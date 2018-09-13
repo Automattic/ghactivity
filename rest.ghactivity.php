@@ -147,7 +147,7 @@ class Ghactivity_Api {
 		/**
 		 * And now get stats.
 		 */
-		$summary_this_day = GHActivity_Calls::count_posts_per_event_type(
+		$summary_this_day = GHActivity_Queries::count_posts_per_event_type(
 			$this_morning,
 			$now,
 			'',
@@ -155,7 +155,7 @@ class Ghactivity_Api {
 			false
 		);
 
-		$summary_this_week = GHActivity_Calls::count_posts_per_event_type(
+		$summary_this_week = GHActivity_Queries::count_posts_per_event_type(
 			$first_of_week,
 			$now,
 			'',
@@ -163,7 +163,7 @@ class Ghactivity_Api {
 			false
 		);
 
-		$summary_this_month = GHActivity_Calls::count_posts_per_event_type(
+		$summary_this_month = GHActivity_Queries::count_posts_per_event_type(
 			$first_of_month,
 			$now,
 			'',
@@ -174,7 +174,7 @@ class Ghactivity_Api {
 		/**
 		 * Build summaries per actor.
 		 */
-		$actors_this_day = GHActivity_Calls::count_posts_per_event_type(
+		$actors_this_day = GHActivity_Queries::count_posts_per_event_type(
 			$this_morning,
 			$now,
 			'',
@@ -182,7 +182,7 @@ class Ghactivity_Api {
 			true
 		);
 
-		$actors_this_week = GHActivity_Calls::count_posts_per_event_type(
+		$actors_this_week = GHActivity_Queries::count_posts_per_event_type(
 			$first_of_week,
 			$now,
 			'',
@@ -190,7 +190,7 @@ class Ghactivity_Api {
 			true
 		);
 
-		$actors_this_month = GHActivity_Calls::count_posts_per_event_type(
+		$actors_this_month = GHActivity_Queries::count_posts_per_event_type(
 			$first_of_month,
 			$now,
 			'',

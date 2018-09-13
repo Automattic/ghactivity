@@ -46,7 +46,7 @@ function ghactivity_team_shortcode( $atts ) {
 	// Action count during the past week.
 	$date_end = esc_attr( date( 'Y-m-d' ) );
 	$date_start = esc_attr( date( 'Y-m-d', strtotime( '-1 week' ) ) );
-	$action_count = GHActivity_Calls::count_posts_per_event_type( $date_start, $date_end, $team, '', false );
+	$action_count = GHActivity_Queries::count_posts_per_event_type( $date_start, $date_end, $team, '', false );
 
 	// Remove all actions with a count of 0. We won't need to display them.
 	$action_count = array_filter( $action_count );
@@ -70,7 +70,7 @@ function ghactivity_team_shortcode( $atts ) {
 	/**
 	* Add number of commits to the report.
 	*/
-	$commit_count = GHActivity_Calls::count_commits( $date_start, $date_end, $team );
+	$commit_count = GHActivity_Queries::count_commits( $date_start, $date_end, $team );
 	if ( ! empty( $commit_count ) ) {
 		$commits_key = __( 'Committed', 'ghactivity' );
 		$action_count[ $commits_key ] = (int) $commit_count;
@@ -79,7 +79,7 @@ function ghactivity_team_shortcode( $atts ) {
 	/**
 	* Add number of repos to the report.
 	*/
-	$repos_count = GHActivity_Calls::count_repos( $date_start, $date_end, $team );
+	$repos_count = GHActivity_Queries::count_repos( $date_start, $date_end, $team );
 	if ( ! empty( $repos_count ) ) {
 		$repos_key = __( 'Projects', 'ghactivity' );
 		$action_count[ $repos_key ] = (int) $repos_count;
