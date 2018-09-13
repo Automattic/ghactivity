@@ -1,5 +1,5 @@
 === GHActivity ===
-Contributors: jeherve
+Contributors: automattic, jeherve
 Tags: GitHub, Tracking, Productivity,
 Stable tag: 1.5.0
 Requires at least: 4.4.2

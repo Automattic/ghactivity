@@ -9,7 +9,7 @@
 	},
 	"repository": {
 		"type": "git",
-		"url": "git+https://github.com/jeherve/ghactivity.git"
+		"url": "git+https://github.com/automattic/ghactivity.git"
 	},
 	"keywords": [
 		"wordpress",
@@ -20,7 +20,7 @@
 	"author": "Jeremy Herve",
 	"license": "GPL-2.0+",
 	"bugs": {
-		"url": "https://github.com/jeherve/ghactivity/issues"
+		"url": "https://github.com/automattic/ghactivity/issues"
 	},
 	"homepage": "https://wordpress.org/plugins/ghactivity/",
 	"dependencies": {

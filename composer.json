@@ -1,11 +1,11 @@
 {
-  "name"       : "jeherve/ghactivity",
+  "name"       : "automattic/ghactivity",
 	"description": "Build reports of all your GitHub activity. ",
 	"homepage": "https://wordpress.org/plugins/ghactivity/",
   "type"       : "wordpress-plugin",
 	"license": "GPL-2.0+",
   "support": {
-    "url": "https://github.com/jeherve/ghactivity/issues"
+    "url": "https://github.com/automattic/ghactivity/issues"
   },
   "require"    : {
       "composer/installers": "~1.0"
