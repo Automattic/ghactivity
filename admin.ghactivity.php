@@ -24,32 +24,6 @@ function ghactivity_menu() {
 add_action( 'admin_menu', 'ghactivity_menu' );
 
 /**
- * Enqueue Custom script on that page.
- *
- * @since 1.1
- *
- */
-function ghactivity_enqueue_admin_scripts( $hook ) {
-
-	global $ghactivity_settings_page;
-
-	wp_register_script( 'ghactivity-reports', plugins_url( 'js/reports.js', __FILE__ ), array( 'jquery', 'jquery-ui-datepicker' ), GHACTIVITY__VERSION );
-	$report_options = array(
-		'date_format' => 'yy-mm-dd',
-	);
-	wp_localize_script( 'ghactivity-reports', 'report_options', $report_options );
-
-	wp_register_style( 'ghactivity-reports-datepicker', plugins_url( 'css/datepicker.css', __FILE__ ), array(), GHACTIVITY__VERSION );
-
-	if ( $ghactivity_settings_page !== $hook ) {
-		return;
-	}
-
-	wp_enqueue_script( 'ghactivity-reports' );
-	wp_enqueue_style( 'ghactivity-reports-datepicker' );
-}
-add_action( 'admin_enqueue_scripts', 'ghactivity_enqueue_admin_scripts' );
-/**
  * Create new option.
  */
 function ghactivity_options_init() {
@@ -105,28 +79,6 @@ function ghactivity_options_init() {
 		__( 'Initialize GitHub labels scan', 'ghactivity' ),
 		'ghactivity_label_scan_callback',
 		'ghactivity'
-	);
-
-	// Reports Section.
-	add_settings_section(
-		'ghactivity_reports',
-		__( 'GitHub Activity Reports', 'ghactivity' ),
-		'ghactivity_reports_callback',
-		'ghactivity'
-	);
-	add_settings_field(
-		'date_start',
-		__( 'From', 'ghactivity' ),
-		'ghactivity_date_start_callback',
-		'ghactivity',
-		'ghactivity_reports'
-	);
-	add_settings_field(
-		'date_end',
-		__( 'To', 'ghactivity' ),
-		'ghactivity_date_end_callback',
-		'ghactivity',
-		'ghactivity_reports'
 	);
 }
 add_action( 'admin_init', 'ghactivity_options_init' );
@@ -240,39 +192,6 @@ function ghactivity_repos_monitoring_callback() {
 }
 
 /**
- * GitHub Activity Reports section.
- *
- * @since 1.1
- */
-function ghactivity_reports_callback() {
-	echo '<p>';
-	esc_html_e( 'Select the start and end dates of the report you want to generate below.', 'ghactivity' );
-	echo '</p>';
-}
-
-/**
- * GitHub Activity Reports option callbacks.
- *
- * @since 1.1
- */
-// Date From
-function ghactivity_date_start_callback() {
-	$options = (array) get_option( 'ghactivity' );
-	printf(
-		'<input type="text" name="ghactivity[date_start]" value="%s" class="report-date" />',
-		isset( $options['date_start'] ) ? esc_attr( $options['date_start'] ) : date( 'Y-m-d', strtotime( '-8 days' ) )
-	);
-}
-// Date End
-function ghactivity_date_end_callback() {
-	$options = (array) get_option( 'ghactivity' );
-	printf(
-		'<input type="text" name="ghactivity[date_end]" value="%s" class="report-date" />',
-		isset( $options['date_end'] ) ? esc_attr( $options['date_end'] ) : date( 'Y-m-d', strtotime( '-1 day' ) )
-	);
-}
-
-/**
  * Sanitize and validate input.
  *
  * @since 1.0
@@ -285,9 +204,6 @@ function ghactivity_settings_validate( $input ) {
 	$input['client_id']       = sanitize_key( $input['access_token'] );
 	$input['display_private'] = (bool) $input['display_private'];
 	$input['repos']           = sanitize_text_field( $input['repos'] );
-	$input['date_start']      = sanitize_text_field( $input['date_start'] );
-	$input['date_end']        = sanitize_text_field( $input['date_end'] );
-
 	return $input;
 }
 
@@ -310,7 +226,6 @@ function ghactivity_do_settings() {
 					 */
 					do_action( 'ghactivity_start_settings' );
 					do_settings_sections( 'ghactivity' );
-					do_settings_sections( 'ghactivity_reports' );
 					submit_button();
 					/**
 					 * Fires at the bottom of the Settings page.
