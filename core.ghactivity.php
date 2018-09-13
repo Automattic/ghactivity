@@ -555,9 +555,9 @@ class GHActivity_Calls {
 								if (
 									is_array( $term_id_object )
 									&& 'ghactivity_actor' === $term_id_object['taxonomy']
-									&& empty( get_term_meta( $term_id, 'github_info', true ) )
+									//&& empty( get_term_meta( $term_id, 'github_info', true ) )
 								) {
-									$gh_user_details = $this->get_person_details( $term_id_object['name'] );
+									$gh_user_details = $this->get_person_details( $term_id_object['slug'] );
 									if ( ! empty( $gh_user_details ) ) {
 										// Add a bio and change the nice name.
 										$person_args = array(
