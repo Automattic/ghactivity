@@ -45,8 +45,6 @@ class Jeherve_GHActivity {
 		// Load core functions.
 		require_once( GHACTIVITY__PLUGIN_DIR . 'core.ghactivity.php' );
 		require_once( GHACTIVITY__PLUGIN_DIR . 'cpt.ghactivity.php' );
-		require_once( GHACTIVITY__PLUGIN_DIR . 'charts.ghactivity.php' );
-		require_once( GHACTIVITY__PLUGIN_DIR . 'reports.ghactivity.php' );
 		require_once( GHACTIVITY__PLUGIN_DIR . 'rest.ghactivity.php' );
 		require_once( GHACTIVITY__PLUGIN_DIR . 'queries.ghactivity.php' );
 		require_once( GHACTIVITY__PLUGIN_DIR . 'schedule.ghactivity.php' );
