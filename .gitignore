@@ -1,6 +1,5 @@
 # Folders
 /node_modules
-/_build
 /vendor
 /.vscode
 /.idea
@@ -9,4 +8,3 @@
 .DS_Store
 npm-debug.log
 todo.md
-
