@@ -21,7 +21,7 @@ function ghactivity_team_shortcode( $atts ) {
 	$team_members_args = array(
 		'taxonomy'   => 'ghactivity_actor',
 		'hide_empty' => false,
-		'fields'     => 'id=>name',
+		'fields'     => 'all',
 		'meta_query' => array(
 			array(
 				'key'     => 'team',
@@ -34,8 +34,8 @@ function ghactivity_team_shortcode( $atts ) {
 
 	// Build list of teammates for that team.
 	$team = array();
-	foreach ( $team_members as $id => $teammate ) {
-		$team[] = $teammate;
+	foreach ( $team_members as $teammate ) {
+		$team[ $teammate->slug ] = $teammate->name;
 	}
 
 	/**
@@ -46,7 +46,7 @@ function ghactivity_team_shortcode( $atts ) {
 	// Action count during the past week.
 	$date_end = esc_attr( date( 'Y-m-d' ) );
 	$date_start = esc_attr( date( 'Y-m-d', strtotime( '-1 week' ) ) );
-	$action_count = GHActivity_Queries::count_posts_per_event_type( $date_start, $date_end, $team, '', false );
+	$action_count = GHActivity_Queries::count_posts_per_event_type( $date_start, $date_end, array_values( $team ), '', false );
 
 	// Remove all actions with a count of 0. We won't need to display them.
 	$action_count = array_filter( $action_count );
@@ -70,7 +70,7 @@ function ghactivity_team_shortcode( $atts ) {
 	/**
 	* Add number of commits to the report.
 	*/
-	$commit_count = GHActivity_Queries::count_commits( $date_start, $date_end, $team );
+	$commit_count = GHActivity_Queries::count_commits( $date_start, $date_end, array_values( $team ) );
 	if ( ! empty( $commit_count ) ) {
 		$commits_key = __( 'Committed', 'ghactivity' );
 		$action_count[ $commits_key ] = (int) $commit_count;
@@ -79,7 +79,7 @@ function ghactivity_team_shortcode( $atts ) {
 	/**
 	* Add number of repos to the report.
 	*/
-	$repos_count = GHActivity_Queries::count_repos( $date_start, $date_end, $team );
+	$repos_count = GHActivity_Queries::count_repos( $date_start, $date_end, array_values( $team ) );
 	if ( ! empty( $repos_count ) ) {
 		$repos_key = __( 'Projects', 'ghactivity' );
 		$action_count[ $repos_key ] = (int) $repos_count;
@@ -106,11 +106,12 @@ function ghactivity_team_shortcode( $atts ) {
 
 	$report .= '<h3>' . esc_html__( 'Check their individual stats here:', 'ghactivity' ) . '</h3>';
 	$report .= '<ul>';
-	foreach ( $team as $name ) {
+	foreach ( $team as $slug => $name ) {
 		$report .= sprintf(
-			'<li><a href="%1$s/ghactivity_actor/%2$s">%2$s</a></li>',
+			'<li><a href="%1$s/ghactivity_actor/%2$s">%3$s</a></li>',
 			get_home_url(),
-			esc_attr( $name )
+			esc_attr( $slug ),
+			esc_html( $name )
 		);
 	}
 	$report .= '</ul>';
