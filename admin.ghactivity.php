@@ -184,7 +184,7 @@ function ghactivity_repos_monitoring_callback() {
  */
 function ghactivity_settings_validate( $input ) {
 	$input['username']        = sanitize_text_field( $input['username'] );
-	$input['client_id']       = sanitize_key( $input['access_token'] );
+	$input['access_token']    = sanitize_key( $input['access_token'] );
 	$input['display_private'] = (bool) $input['display_private'];
 	$input['repos']           = sanitize_text_field( $input['repos'] );
 	return $input;
