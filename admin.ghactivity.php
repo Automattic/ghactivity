@@ -150,32 +150,15 @@ function ghactivity_repos_monitoring_callback() {
 	esc_html_e( 'The plugin allows you to monitor all activity for the following repos, even from users not listed above.', 'ghactivity' );
 	echo '</p>';
 
-	$repos_query_args = array(
-		'taxonomy'   => 'ghactivity_repo',
-		'hide_empty' => false,
-		'number'     => 10, // Just to make sure we don't get rate-limited by GH.
-		'fields'     => 'id=>name',
-		'meta_query' => array(
-			array(
-				'key'     => 'full_reporting',
-				'value'   => true,
-				'compare' => '='
-			),
-		),
-	);
-	$repos_to_monitor = get_terms( $repos_query_args );
+	$repos_to_monitor = GHActivity_Queries::get_monitored_repos( 'names' );
 
 	// If we have repos to watch, let's get data for them.
-	if (
-		! is_wp_error( $repos_to_monitor )
-		&& is_array( $repos_to_monitor )
-		&& ! empty( $repos_to_monitor )
-	) {
+	if ( ! empty( $repos_to_monitor ) ) {
 		echo '<ul>';
-		foreach ( $repos_to_monitor as $id => $name ) {
+		foreach ( $repos_to_monitor as $repo ) {
 			printf(
 				'<li>%s</li>',
-				esc_html( $name )
+				esc_html( $repo )
 			);
 		}
 		echo '</ul>';
