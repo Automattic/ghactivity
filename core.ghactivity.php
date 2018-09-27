@@ -667,7 +667,7 @@ class GHActivity_Calls {
 			$labels     = $this->get_label_names( $event->labels );
 			$number     = $event->number;
 			$creator    = $event->user->login;
-			$repo_name  = ( preg_match( '/(\w+)\/(\w+)$/', $event->repository_url, $matches ) ) ? $matches[0] : '';
+			$repo_name  = ( preg_match( '/([^\/]+)\/([^\/]+)$/', $event->repository_url, $matches ) ) ? $matches[0] : '';
 			$comments   = $event->comments;
 		} else {
 			// Is it an issue or a PR event?
