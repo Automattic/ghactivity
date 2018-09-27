@@ -658,6 +658,28 @@ function ghactivity_register_issues_post_type() {
 		'show_tagcloud'              => true,
 		'show_in_rest'               => true,
 	) );
+
+	/**
+	 * Declare custom post statuses for that post type.
+	 * It will allow us to denote an issue's status based on the labels used with that issue.
+	 *
+	 * @since 2.0.0
+	 */
+	$status_list = array(
+		'triaged'             => esc_html__( 'Triaged', 'ghactivity' ),
+		'needs-dev'           => esc_html__( 'Needs Dev', 'ghactivity' ),
+		'needs-support'       => esc_html__( 'Needs Support', 'ghactivity' ),
+		'needs-investigation' => esc_html__( 'Needs Investigation', 'ghactivity' ),
+	);
+	foreach ( $status_list as $slug => $name ) {
+		register_post_status( esc_attr( $slug ), array(
+			'label'                     => esc_html( $name ),
+			'public'                    => true,
+			'exclude_from_search'       => false,
+			'show_in_admin_all_list'    => true,
+			'show_in_admin_status_list' => true,
+		) );
+	}
 }
 add_action( 'init', 'ghactivity_register_issues_post_type', 0 );
 

@@ -301,50 +301,65 @@ class GHActivity_Calls {
 	}
 
 	/**
-	 * Get an array of repos we want to follow a bit more closely.
-	 * For those repos we will log activity from everyone,
-	 * not just from the usernames set in the plugin options.
-	 *
-	 * We will select all repos from the ghactivity_repo taxonomy,
-	 * and monitor all those that have the `full_reporting` term meta set to true.
+	 * Filter the labels we get to only keep the most important status.
 	 *
 	 * @since 2.0.0
 	 *
-	 * @param string $fields Type of info to return. Accept full or names. Default to full.
+	 * @param array $labels Array of labels for one issue/PR.
 	 *
-	 * @return WP_Error|array $repos_to_monitor Array of repos to monitor.
+	 * @return string $status Custom post status.
 	 */
-	private function get_monitored_repos( $fields = 'full' ) {
-		$repos_query_args = array(
-			'taxonomy'   => 'ghactivity_repo',
-			'hide_empty' => false,
-			'number'     => 10, // Just to make sure we don't get rate-limited by GH.
-			'fields'     => 'id=>name',
-			'meta_query' => array(
-				array(
-					'key'     => 'full_reporting',
-					'value'   => true,
-					'compare' => '=',
-				),
-			),
-		);
-		$repos_to_monitor = get_terms( $repos_query_args );
+	private function filter_status_labels( $labels ) {
+		// Clean up our label list first.
+		foreach ( $labels as $label ) {
+			// Check if the label name includes the word "Status". If not, let's ignore.
+			if ( false === strpos( $label, 'Status' ) ) {
+				unset( $labels[ $label ] );
+				continue;
+			}
 
-		if ( 'full' === $fields ) {
-			return $repos_to_monitor;
-		} else {
-			$repo_names = array();
-			if (
-				! is_wp_error( $repos_to_monitor )
-				&& is_array( $repos_to_monitor )
-				&& ! empty( $repos_to_monitor )
-			) {
-				foreach ( $repos_to_monitor as $id => $name ) {
-					$repo_names[] = $name;
+			/**
+			 * Filter our status labels, and remove labels that include words set in that array.
+			 *
+			 * @since 2.0.0
+			 *
+			 * @param array $excluded_labels Array of words that will cause a label not to be used as status.
+			 */
+			$excluded_label_blacklist = apply_filters( 'ghactivity_status_label_blacklist', array() );
+
+			foreach ( $excluded_label_blacklist as $word ) {
+				if ( false === strpos( $label, $word ) ) {
+					unset( $labels[ $label ] );
 				}
 			}
-			return $repo_names;
 		}
+
+		// Now give priority to issues where we "need" something, since that means we still have an action to take.
+		$needs_dev_words = apply_filters( 'ghactivity_status_label_dev_list', array() );
+		if ( in_array( $needs_dev_words, $labels ) ) {
+			return 'needs-dev';
+		}
+
+		// Not awaiting dev, but maybe awaiting for support?
+		$needs_support_words = apply_filters( 'ghactivity_status_label_support_list', array() );
+		if ( in_array( $needs_support_words, $labels ) ) {
+			return 'needs-support';
+		}
+
+		// Not awaiting support, but maybe awaiting for an additional level of support?
+		$needs_more_support_words = apply_filters( 'ghactivity_status_label_investigate_list', array() );
+		if ( in_array( $needs_more_support_words, $labels ) ) {
+			return 'needs-investigation';
+		}
+
+		// Maybe it's already been triaged?
+		$triaged_words = apply_filters( 'ghactivity_status_label_triaged_list', array() );
+		if ( in_array( $triaged_words, $labels ) ) {
+			return 'triaged';
+		}
+
+		// Fallback.
+		return 'publish';
 	}
 
 	/**
@@ -743,6 +758,7 @@ class GHActivity_Calls {
 	 * 		@type int    $comments   Number of comments on the issue.
 	 * 		@type string $creator    Issue creator.
 	 * 		@type array  $labels     Array of labels for that issue.
+	 * 		@type string $status     Custom Post Status.
 	 * }
 	 */
 	private function record_issue_details( $issue_details ) {
@@ -753,7 +769,6 @@ class GHActivity_Calls {
 		 */
 		$is_new_args = array(
 			'post_type'      => 'ghactivity_issue',
-			'post_status'    => 'publish',
 			'posts_per_page' => 1,
 			'tax_query'      => array(
 				array(
@@ -812,7 +827,7 @@ class GHActivity_Calls {
 			$issue_args = array(
 				'post_title'   => $issue_details['title'],
 				'post_type'    => 'ghactivity_issue',
-				'post_status'  => 'publish',
+				'post_status'  => $issue_details['status'],
 				'post_date'    => $issue_details['created_at'],
 				'tax_input'    => $taxonomies,
 				'meta_input'   => $meta,
@@ -852,6 +867,7 @@ class GHActivity_Calls {
 			$issue_args = array(
 				'ID'           => $post_id,
 				'post_title'   => $issue_details['title'],
+				'post_status'  => $issue_details['status'],
 				'meta_input'   => $meta,
 				'tax_input'    => $taxonomies,
 				'post_content' => $post_content,
