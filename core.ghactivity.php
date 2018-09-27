@@ -644,7 +644,8 @@ class GHActivity_Calls {
 	 * 		@type int    $number     Issue Number.
 	 * 		@type string $repo_name  Repo name.
 	 * 		@type string $state      Issue state (open or closed).
-	 * 		@type string $title      Issue title.
+	 * 		@type string $title      Repo name and issue number concatenated to build a post title.
+	 * 		@type string $issue_name Issue title.
 	 * 		@type int    $comments   Number of comments on the issue.
 	 * 		@type string $creator    Issue creator.
 	 * 		@type array  $labels     Array of labels for that issue.
@@ -702,14 +703,14 @@ class GHActivity_Calls {
 			);
 
 			$post_content = sprintf(
-				'<ul>
-					<li><a href="https://github.com/%1$s/issues/%2$s">%3$s</a></li>
+				'<h3 class="issue-title"><a href="https://github.com/%2$s/issues/%3$s">%1$s</a></h3>
+				<ul>
 					<li>%4$s %5$s</li>
 					<li>Comments: %6$s</li>
 				</ul>',
+				esc_html( $issue_details['issue_name'] ),
 				esc_attr( $issue_details['repo_name'] ),
 				absint( $issue_details['number'] ),
-				esc_html__( 'View original issue.', 'ghactivity' ),
 				esc_html__( 'Labels:', 'ghactivity' ),
 				implode( ', ', $issue_details['labels'] ),
 				absint( $issue_details['comments'] )
@@ -741,14 +742,14 @@ class GHActivity_Calls {
 				'comments' => absint( $issue_details['comments'] ),
 			);
 			$post_content = sprintf(
-				'<ul>
-					<li><a href="https://github.com/%1$s/issues/%2$s">%3$s</a></li>
+				'<h3 class="issue-title"><a href="https://github.com/%2$s/issues/%3$s">%1$s</a></h3>
+				<ul>
 					<li>%4$s %5$s</li>
 					<li>Comments: %6$s</li>
 				</ul>',
+				esc_html( $issue_details['issue_name'] ),
 				esc_attr( $issue_details['repo_name'] ),
 				absint( $issue_details['number'] ),
-				esc_html__( 'View original issue.', 'ghactivity' ),
 				esc_html__( 'Labels:', 'ghactivity' ),
 				implode( ', ', $issue_details['labels'] ),
 				absint( $issue_details['comments'] )
