@@ -21,6 +21,9 @@ class GHActivity_Calls {
 		if ( ! wp_next_scheduled( 'ghactivity_publish' ) ) {
 			wp_schedule_event( time(), 'hourly', 'ghactivity_publish' );
 		}
+
+		// Trigger a single event to launch the full sync loop.
+		add_action( 'ghactivity_full_issue_sync', array( $this, 'full_issue_sync' ), 10, 1 );
 	}
 
 	/**
@@ -39,6 +42,22 @@ class GHActivity_Calls {
 			return $options[ $name ];
 		} else {
 			return '';
+		}
+	}
+
+	/**
+	 * Save option in our array of 'ghactivity' options.
+	 *
+	 * @since 2.0.0
+	 *
+	 * @param string       $name  Option name.
+	 * @param string|array $value Option value.
+	 */
+	private function update_option( $name, $value ) {
+		$options = get_option( 'ghactivity' );
+		if ( isset( $value ) && ! empty( $value ) ) {
+			$options[ $name ] = $value;
+			update_option( 'ghactivity', $options );
 		}
 	}
 
@@ -181,6 +200,35 @@ class GHActivity_Calls {
 	}
 
 	/**
+	 * Get the number of open issues/PR for a repo.
+	 *
+	 * @since 2.0.0
+	 *
+	 * @param string $repo_name Name of the repo we are interested in.
+	 *
+	 * @return int $issues_number Number of open issues.
+	 */
+	private function get_repo_issues( $repo_name ) {
+		if ( ! empty( $repo_name ) ) {
+			// Let's get some info from GitHub.
+			$query_url = sprintf(
+				'https://api.github.com/repos/%1$s?access_token=%2$s',
+				$repo_name,
+				$this->get_option( 'access_token' )
+			);
+			$repo_info_body = $this->get_github_data( $query_url );
+
+			if ( ! empty( $repo_info_body->open_issues ) ) {
+				return $repo_info_body->open_issues;
+			} else {
+				return 0;
+			}
+		}
+		// Fallback.
+		return 0;
+	}
+
+	/**
 	 * Does a GitHub user belong to a specific organization?
 	 *
 	 * @since 2.0.0
@@ -313,7 +361,7 @@ class GHActivity_Calls {
 	 *
 	 * @return string $ghactivity_event_type Event type displayed in ghactivity_event_type taxonomy.
 	 */
-	private function get_event_type( $event_type, $action ) {
+	private function get_event_type( $event_type, $action = '' ) {
 		if ( 'IssuesEvent' == $event_type ) {
 			if ( 'closed' == $action ) {
 				$ghactivity_event_type = __( 'Issue Closed', 'ghactivity' );
@@ -520,55 +568,11 @@ class GHActivity_Calls {
 								 *
 								 * @param array $repos Array of repos for which we want to monitor events.
 								 */
-								apply_filters( 'ghactivity_issues_repo_to_monitor', $this->get_monitored_repos( 'names' ) )
+								apply_filters( 'ghactivity_issues_repo_to_monitor', GHActivity_Queries::get_monitored_repos( 'names' ) )
 							)
 						)
 					) {
-						// Is it an issue or a PR?
-						if ( ! empty( $event->payload->pull_request ) ) {
-							$issue_type = 'pull_request';
-							$created_at = $event->payload->pull_request->created_at;
-							$state      = $event->payload->pull_request->state;
-							$title      = esc_html( $event->payload->pull_request->title );
-							$labels     = ( isset( $event->payload->pull_request->labels ) ? $this->get_label_names( $event->payload->pull_request->labels ) : array() );
-							$number     = $event->payload->pull_request->number;
-						} else {
-							$issue_type = 'issue';
-							$created_at = $event->payload->issue->created_at;
-							$state      = $event->payload->issue->state;
-							$title      = esc_html( $event->payload->issue->title );
-							$labels     = ( isset( $event->payload->issue->labels ) ? $this->get_label_names( $event->payload->issue->labels ) : array() );
-							$number     = $event->payload->issue->number;
-						}
-
-						/**
-						 * Specify a creator when an issue or PR is opened.
-						 * Favorize display_login when possible.
-						 */
-						if ( 'opened' === $event->payload->action ) {
-							$creator = esc_html( $event->actor->display_login );
-						} elseif ( ! empty( $event->payload->pull_request ) ) {
-							$creator = esc_html( $event->payload->pull_request->user->login );
-						} elseif ( ! empty( $event->payload->issue ) ) {
-							$creator = esc_html( $event->payload->issue->user->login );
-						} else {
-							$creator = '';
-						}
-
-						// Record event.
-						$issue_details = array(
-							'type'       => $issue_type,
-							'event_type' => $taxonomies['ghactivity_event_type'],
-							'created_at' => $created_at,
-							'number'     => ( ! empty( $number ) ? absint( $number ) : 0 ),
-							'repo_name'  => esc_html( $event->repo->name ),
-							'state'      => ( isset( $state ) ? esc_html( $state ) : 'open' ),
-							'title'      => $title,
-							'comments'   => ( isset( $event->payload->comments ) ? $event->payload->comments : 0 ),
-							'creator'    => $creator,
-							'labels'     => $labels,
-						);
-						$this->record_issue_details( $issue_details );
+						$this->log_issue( $event );
 					}
 
 					// Finally, publish our event.
@@ -632,6 +636,97 @@ class GHActivity_Calls {
 	}
 
 	/**
+	 * Get info about a specific issue/PR and record it in our ghactivity_issue CPT.
+	 *
+	 * @since 2.0.0
+	 *
+	 * @param Object $event GitHub event data.
+	 */
+	private function log_issue( $event ) {
+		// Are we backfilling issues and PRs? In this case we hit a different endpoint, with different data structure.
+		if ( ! isset( $event->type ) ) {
+			$issue_type = ( isset( $event->pull_request ) ? 'pull_request' : 'issue' );
+			$created_at = $event->created_at;
+			$state      = $event->state;
+			$title      = esc_html( $event->title );
+			$labels     = $this->get_label_names( $event->labels );
+			$number     = $event->number;
+			$creator    = $event->user->login;
+			$repo_name  = ( preg_match( '/(\w+)\/(\w+)$/', $event->repository_url, $matches ) ) ? $matches[0] : '';
+			$comments   = $event->comments;
+		} else {
+			// Is it an issue or a PR event?
+			if ( ! empty( $event->payload->pull_request ) ) {
+				$issue_type = 'pull_request';
+				$created_at = $event->payload->pull_request->created_at;
+				$state      = $event->payload->pull_request->state;
+				$title      = esc_html( $event->payload->pull_request->title );
+				$labels     = ( isset( $event->payload->pull_request->labels ) ? $this->get_label_names( $event->payload->pull_request->labels ) : array() );
+				$number     = $event->payload->pull_request->number;
+				$repo_name  = $event->repo->name;
+			} else {
+				$issue_type = 'issue';
+				$created_at = $event->payload->issue->created_at;
+				$state      = $event->payload->issue->state;
+				$title      = esc_html( $event->payload->issue->title );
+				$labels     = ( isset( $event->payload->issue->labels ) ? $this->get_label_names( $event->payload->issue->labels ) : array() );
+				$number     = $event->payload->issue->number;
+				$repo_name  = $event->repo->name;
+			}
+
+			/**
+			 * Specify a creator when an issue or PR is opened.
+			 * Favorize display_login when possible.
+			 */
+			if ( 'opened' === $event->payload->action ) {
+				$creator = esc_html( $event->actor->display_login );
+			} elseif ( ! empty( $event->payload->pull_request ) ) {
+				$creator = esc_html( $event->payload->pull_request->user->login );
+			} elseif ( ! empty( $event->payload->issue ) ) {
+				$creator = esc_html( $event->payload->issue->user->login );
+			} else {
+				$creator = '';
+			}
+
+			// Get the number of comments.
+			$comments = ( isset( $event->payload->comments ) ? $event->payload->comments : 0 );
+		}
+
+		/**
+		 * Change status based on state and labels.
+		 * Reopened issues should fall back in needing triage.
+		 * Closed issues should be marked as triaged.
+		 */
+		if ( 'closed' === $state ) {
+			$status = 'triaged';
+		} elseif ( 'reopened' === $state ) {
+			$status = 'publish';
+		} elseif ( 'open' === $state ) {
+			/**
+			 * Clean up label list to keep important status labels.
+			 * We will use the most important status label as post status.
+			 */
+			$status = $this->filter_status_labels( $labels );
+		}
+
+		// Record event.
+		$issue_details = array(
+			'type'       => $issue_type,
+			'created_at' => $created_at,
+			'number'     => ( ! empty( $number ) ? absint( $number ) : 0 ),
+			'repo_name'  => esc_html( $repo_name ),
+			'state'      => ( isset( $state ) ? esc_html( $state ) : 'open' ),
+			'title'      => esc_html( $repo_name ) . '#' . ( ! empty( $number ) ? absint( $number ) : 0 ),
+			'issue_name' => $title,
+			'comments'   => $comments,
+			'creator'    => $creator,
+			'labels'     => $labels,
+			'status'     => $status,
+		);
+		$this->record_issue_details( $issue_details );
+	}
+
+	/**
 	 * Record data about each one of our issues in the ghactivity_issue CPT.
 	 *
 	 * @since 2.0.0
@@ -639,7 +734,6 @@ class GHActivity_Calls {
 	 * @param array $issue_details {
 	 * 	Array of information about the issue.
 	 * 		@type string $type       issue or pull_request.
-	 * 		@type string $event_type What kind of event was this.
 	 * 		@type string created_at  When did this happen.
 	 * 		@type int    $number     Issue Number.
 	 * 		@type string $repo_name  Repo name.
@@ -935,7 +1029,7 @@ class GHActivity_Calls {
 		$response_body    = array();
 
 		if ( empty( $repo ) ) {
-			$repos_to_query = $this->get_monitored_repos( 'names' );
+			$repos_to_query = GHActivity_Queries::get_monitored_repos( 'names' );
 			if ( empty( $repos_to_query ) ) {
 				return $response_body;
 			}
@@ -955,6 +1049,86 @@ class GHActivity_Calls {
 			$response_body        = array_merge( $single_response_body, $response_body );
 		}
 		return $response_body;
+	}
+
+	/**
+	 * Get all issues open for a watched repo, and record them on our end.
+	 *
+	 * @since 2.0.0
+	 *
+	 * @param string $repo_slug Repo slug.
+	 *
+	 * @return bool $done Returns true when done.
+	 */
+	public function full_issue_sync( $repo_slug ) {
+		/**
+		 * First, let's get info about the sync.
+		 *
+		 * The 'full_sync' option can be one of 2 things:
+		 * 1. Empty string -> Option doesn't exist, Sync was never run before. Sync will start and an option will be set.
+		 * 2. Array $args {
+		 * 		string status Sync Status. Can be 'in_progress' or 'done'.
+		 *		int    pages  Number of pages left to sync.
+		 * }
+		 */
+		$status = $this->get_option( $repo_slug . '_full_sync' );
+
+		// If sync already ran successfully, we can stop here.
+		if ( ! empty( $status ) && isset( $status['status'] ) && 'done' === $status['status'] ) {
+			return true;
+		}
+
+		// Get the full name of the repo.
+		$repo = get_term_by( 'slug', $repo_slug, 'ghactivity_repo' );
+
+		/**
+		 * If the option doesn't exist, that means we never ran sync before.
+		 * Let's get started by changing the status to 'in_progress', and get some data.
+		 */
+		if ( empty( $status ) ) {
+			$status = array(
+				'status' => 'in_progress',
+				// dividing by 100 here because we are getting 100 issues per page.
+				'pages'  => round( $this->get_repo_issues( $repo->name ) / 100 ),
+			);
+			// Update our option.
+			$this->update_option( $repo_slug . '_full_sync', $status );
+		}
+
+		// Set WP_IMPORTING to avoid triggering things like subscription emails.
+		defined( 'WP_IMPORTING' ) || define( 'WP_IMPORTING', true );
+
+		// let's start looping.
+		do {
+			$query_url   = sprintf(
+				'https://api.github.com/repos/%1$s/issues?access_token=%2$s&page=%3$s&per_page=100',
+				esc_html( $repo->name ),
+				$this->get_option( 'access_token' ),
+				$status['pages']
+			);
+			$issues_body = $this->get_github_data( $query_url );
+
+			/**
+			 * Only go through the event list if we have valid event array.
+			 */
+			if ( isset( $issues_body ) && is_array( $issues_body ) ) {
+				foreach ( $issues_body as $issue ) {
+					$this->log_issue( $issue );
+				}
+			}
+
+			// One page less to go.
+			$status['pages']--;
+		} while ( 'in_progress' === $status['status'] && 0 != $status['pages'] );
+
+		// We're done. Save options.
+		$status = array(
+			'status' => 'done',
+			'pages'  => 0,
+		);
+		$this->update_option( $repo_slug . '_full_sync', $status );
+
+		return true;
 	}
 }
 new GHActivity_Calls();
