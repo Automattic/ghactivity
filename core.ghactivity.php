@@ -99,7 +99,7 @@ class GHActivity_Calls {
 		}
 
 		// If we have repos to watch, let's get data for them.
-		$repos_to_monitor = $this->get_monitored_repos( 'names' );
+		$repos_to_monitor = GHActivity_Queries::get_monitored_repos( 'names' );
 		if ( ! empty( $repos_to_monitor ) ) {
 			foreach ( $repos_to_monitor as $repo ) {
 				$repo_activity = $this->get_repo_activity( $repo );
