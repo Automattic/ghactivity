@@ -37,7 +37,7 @@ function jeherve_ghactivity_repo_report( $atts ) {
 		array(),
 		GHACTIVITY__VERSION
 	);
-	$traktivity_dash_args = array(
+	$ghactivity_dash_args = array(
 		'api_url'                => esc_url_raw( rest_url() ),
 		'site_url'               => esc_url_raw( home_url() ),
 		'api_nonce'              => wp_create_nonce( 'wp_rest' ),
@@ -45,7 +45,7 @@ function jeherve_ghactivity_repo_report( $atts ) {
 		'split_per_actor'        => (bool) $atts['split_per_actor'],
 		'period'                 => esc_attr( $atts['period'] ),
 	);
-	wp_localize_script( 'ghactivity-repo-activity', 'ghactivity_repo_activity', $traktivity_dash_args );
+	wp_localize_script( 'ghactivity-repo-activity', 'ghactivity_repo_activity', $ghactivity_dash_args );
 	wp_enqueue_script( 'ghactivity-repo-activity' );
 
 	return '<div id="repo-activity"></div>';

@@ -23,7 +23,7 @@ function ghactivity_menu() {
 }
 add_action( 'admin_menu', 'ghactivity_menu' );
 /**
- * Enqueue scripts on Traktivity admin page.
+ * Enqueue scripts on GHActivity admin page.
  *
  * @since 1.1.0
  *
@@ -111,13 +111,13 @@ function ghactivity_options_init() {
 	// Full issue sync section.
 	add_settings_section(
 		'ghactivity_sync_settings',
-		__( 'Full Sync', 'traktivity' ),
+		__( 'Full Sync', 'ghactivity' ),
 		'ghactivity_sync_settings_callback',
 		'ghactivity'
 	);
 	add_settings_field(
 		'full_sync',
-		__( 'Sync status', 'traktivity' ),
+		__( 'Sync status', 'ghactivity' ),
 		'ghactivity_sync_settings_full_sync_callback',
 		'ghactivity',
 		'ghactivity_sync_settings'
