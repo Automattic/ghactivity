@@ -461,4 +461,37 @@ class GHActivity_Queries {
 		}
 		return array_map( 'get_post_content', $posts );
 	}
+
+	/**
+	 * Get an array of repos we want to follow a bit more closely.
+	 * For those repos we will log activity from everyone,
+	 * not just from the usernames set in the plugin options.
+	 *
+	 * We will select all repos from the ghactivity_repo taxonomy,
+	 * and monitor all those that have the `full_reporting` term meta set to true.
+	 *
+	 * @since 2.0.0
+	 *
+	 * @param string $fields Type of info to return. Accept id=>name, all, or names. Default to id=>name.
+	 *
+	 * @return WP_Error|array $repos_to_monitor Array of repos to monitor.
+	 */
+	public static function get_monitored_repos( $fields = 'id=>name' ) {
+		$repos_query_args = array(
+			'taxonomy'   => 'ghactivity_repo',
+			'hide_empty' => false,
+			'number'     => 10, // Just to make sure we don't get rate-limited by GH.
+			'fields'     => $fields,
+			'meta_query' => array(
+				array(
+					'key'     => 'full_reporting',
+					'value'   => true,
+					'compare' => '=',
+				),
+			),
+		);
+		$repos_to_monitor = get_terms( $repos_query_args );
+
+		return $repos_to_monitor;
+	}
 }

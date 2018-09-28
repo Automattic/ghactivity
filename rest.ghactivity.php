@@ -29,11 +29,28 @@ class Ghactivity_Api {
 	 */
 	public function register_endpoints() {
 		/**
+		 * Check Sync status for all Ghactivity issues in a repo.
+		 *
+		 * @since 2.0.0
+		 */
+		register_rest_route( 'ghactivity/v1', '/sync/(?P<repo>[a-zA-Z0-9-]+)', array(
+			'methods'             => WP_REST_Server::EDITABLE,
+			'callback'            => array( $this, 'trigger_sync' ),
+			'permission_callback' => array( $this, 'permissions_check' ),
+			'args'                => array(
+				'repo' => array(
+					'required'          => true,
+					'validate_callback' => array( $this, 'validate_string' ),
+				),
+			),
+		) );
+
+		/**
 		 * Get a stats summary for a specific repo.
 		 *
 		 * @since 1.6.0
 		 */
-		register_rest_route( 'ghactivity/v1', '/stats/repo/(?P<repo>[0-9a-z\-_]+)', array(
+		register_rest_route( 'ghactivity/v1', '/stats/repo/(?P<repo>[0-9a-z\-_\/]+)', array(
 			'methods'             => WP_REST_Server::READABLE,
 			'callback'            => array( $this, 'get_repo_stats' ),
 			'permission_callback' => array( $this, 'permissions_check' ),
@@ -91,6 +108,88 @@ class Ghactivity_Api {
 	 */
 	public function validate_string( $param, $request, $key ) {
 		return is_string( $param );
+	}
+
+	/**
+	 * Trigger a full synchronization of all issues in all watched repos.
+	 *
+	 * @since 2.0.0
+	 *
+	 * @param WP_REST_Request $request Full details about the request.
+	 *
+	 * @return WP_REST_Response $response Response from the Sync function.
+	 */
+	public function trigger_sync( $request ) {
+		// Get parameter from request.
+		if ( isset( $request['repo'] ) ) {
+			$repo = $request['repo'];
+		} else {
+			return new WP_Error(
+				'not_found',
+				esc_html__( 'You did not specify a repository.', 'ghactivity' ),
+				array( 'status' => 404 )
+			);
+		}
+
+		$options          = (array) get_option( 'ghactivity' );
+		$repos_to_monitor = GHActivity_Queries::get_monitored_repos( 'all' );
+		$repos_to_monitor = array_map(
+			function( $term ) {
+				return $term->slug;
+			},
+		$repos_to_monitor );
+
+		// Gather info about our watched repos. Return early if we do not watch any repo yet.
+		if ( empty( $repos_to_monitor ) ) {
+			return new WP_REST_Response(
+				esc_html__( 'You currently do not monitor activity on any repository. You cannot use this option yet.', 'ghactivity' ),
+				200
+			);
+		}
+
+		// Return an error if the repo asked for does not match an existing repo being watched.
+		if ( ! in_array( $repo, $repos_to_monitor, true ) ) {
+			return new WP_Error(
+				'not_found',
+				esc_html__( 'The specified repository is not currently being watched.', 'ghactivity' ),
+				array( 'status' => 404 )
+			);
+		}
+
+		// Return an error if Synchronization is already complete. No need to run it again.
+		if (
+			isset( $options[ $repo . '_full_sync' ], $options[ $repo . '_full_sync' ]['status'] )
+			&& 'done' === $options[ $repo . '_full_sync' ]['status']
+		) {
+			return new WP_REST_Response(
+				esc_html__( 'Synchronization is complete for this repository.', 'ghactivity' ),
+				200
+			);
+		}
+
+		// Return an error if Synchronization is currently in progress. Let's let it finish.
+		if (
+			isset( $options[ $repo . '_full_sync' ], $options[ $repo . '_full_sync' ]['status'] )
+			&& 'in_progress' === $options[ $repo . '_full_sync' ]['status']
+		) {
+			return new WP_REST_Response(
+				esc_html__( 'Synchronization for this repository is in progress. Give it some time!', 'ghactivity' ),
+				200
+			);
+		}
+
+		// No errors? Schedule a single event that will start in 2 seconds and trigger the full sync.
+		if ( ! wp_next_scheduled( 'ghactivity_full_issue_sync' ) ) {
+			wp_schedule_single_event( time(), 'ghactivity_full_issue_sync', array( $repo ) );
+		}
+
+		return new WP_REST_Response(
+			sprintf(
+				__( 'Synchronization has started. Give it a bit of time now. You can monitor progress <a href="%s">here</a>.', 'ghactivity' ),
+				esc_url( get_admin_url( null, 'edit.php?post_type=ghactivity_issue' ) )
+			),
+			200
+		);
 	}
 
 	/**

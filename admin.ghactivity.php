@@ -22,6 +22,33 @@ function ghactivity_menu() {
 	);
 }
 add_action( 'admin_menu', 'ghactivity_menu' );
+/**
+ * Enqueue scripts on Traktivity admin page.
+ *
+ * @since 1.1.0
+ *
+ * @param int $hook Hook suffix for the current admin page.
+ */
+function ghactivity_enqueue_admin_scripts( $hook ) {
+
+	global $ghactivity_settings_page;
+
+	// Only add our script to our admin page.
+	if ( $ghactivity_settings_page !== $hook ) {
+		return;
+	}
+
+	wp_register_script( 'ghactivity-settings', plugins_url( 'js/admin-settings.js' , __FILE__ ), array( 'jquery' ), GHACTIVITY__VERSION );
+	$ghactivity_settings = array(
+		'api_url'          => esc_url_raw( rest_url() ),
+		'api_nonce'        => wp_create_nonce( 'wp_rest' ),
+		'progress_message' => esc_html__( 'In Progress', 'ghactivity' ),
+	);
+	wp_localize_script( 'ghactivity-settings', 'ghactivity_settings', $ghactivity_settings );
+
+	wp_enqueue_script( 'ghactivity-settings' );
+}
+add_action( 'admin_enqueue_scripts', 'ghactivity_enqueue_admin_scripts' );
 
 /**
  * Create new option.
@@ -79,6 +106,21 @@ function ghactivity_options_init() {
 		__( 'Initialize GitHub labels scan', 'ghactivity' ),
 		'ghactivity_label_scan_callback',
 		'ghactivity'
+	);
+
+	// Full issue sync section.
+	add_settings_section(
+		'ghactivity_sync_settings',
+		__( 'Full Sync', 'traktivity' ),
+		'ghactivity_sync_settings_callback',
+		'ghactivity'
+	);
+	add_settings_field(
+		'full_sync',
+		__( 'Sync status', 'traktivity' ),
+		'ghactivity_sync_settings_full_sync_callback',
+		'ghactivity',
+		'ghactivity_sync_settings'
 	);
 }
 add_action( 'admin_init', 'ghactivity_options_init' );
@@ -150,32 +192,15 @@ function ghactivity_repos_monitoring_callback() {
 	esc_html_e( 'The plugin allows you to monitor all activity for the following repos, even from users not listed above.', 'ghactivity' );
 	echo '</p>';
 
-	$repos_query_args = array(
-		'taxonomy'   => 'ghactivity_repo',
-		'hide_empty' => false,
-		'number'     => 10, // Just to make sure we don't get rate-limited by GH.
-		'fields'     => 'id=>name',
-		'meta_query' => array(
-			array(
-				'key'     => 'full_reporting',
-				'value'   => true,
-				'compare' => '='
-			),
-		),
-	);
-	$repos_to_monitor = get_terms( $repos_query_args );
+	$repos_to_monitor = GHActivity_Queries::get_monitored_repos( 'names' );
 
 	// If we have repos to watch, let's get data for them.
-	if (
-		! is_wp_error( $repos_to_monitor )
-		&& is_array( $repos_to_monitor )
-		&& ! empty( $repos_to_monitor )
-	) {
+	if ( ! empty( $repos_to_monitor ) ) {
 		echo '<ul>';
-		foreach ( $repos_to_monitor as $id => $name ) {
+		foreach ( $repos_to_monitor as $repo ) {
 			printf(
 				'<li>%s</li>',
-				esc_html( $name )
+				esc_html( $repo )
 			);
 		}
 		echo '</ul>';
@@ -191,6 +216,62 @@ function ghactivity_repos_monitoring_callback() {
 	echo '</p>';
 }
 
+
+/**
+ * Full Sync Settings Section.
+ *
+ * @since 2.0.0
+ */
+function ghactivity_sync_settings_callback() {
+	echo '<p>';
+	esc_html_e( 'By default, Ghactivity only gathers data about the last 100 issues in your watched repositories, and then automatically logs all future issues. This section will allow you to perform a full synchronization of all the issues, at once.', 'ghactivity' );
+	echo '</p>';
+}
+
+/**
+ * Full Sync callback.
+ */
+function ghactivity_sync_settings_full_sync_callback() {
+	$options          = (array) get_option( 'ghactivity' );
+	$repos_to_monitor = GHActivity_Queries::get_monitored_repos( 'all' );
+	$repos_to_monitor = array_map(
+		function( $term ) {
+			return $term->slug;
+		},
+	$repos_to_monitor );
+
+	// Gather info about our watched repos, and the current sync status.
+	if ( ! empty( $repos_to_monitor ) ) {
+		foreach ( $repos_to_monitor as $repo ) {
+			$sync_status = isset( $options[ $repo . '_full_sync' ] ) ? $options[ $repo . '_full_sync' ] : '';
+			if ( ! empty( $sync_status ) ) {
+				if ( 'done' === $sync_status['status'] ) {
+					printf(
+						__( 'All events for the %1$s repository have already been synchronized. Check them <a href="%2$s">here</a>.', 'ghactivity' ),
+						esc_html( $repo ),
+						esc_url( get_admin_url( null, 'edit.php?post_type=ghactivity_issue' ) )
+					);
+				} else {
+					printf(
+						__( 'Synchronization for the %1$s repository in progress. There are still %2$d pages to process.', 'ghactivity' ),
+						esc_html( $repo ),
+						absint( $sync_status['pages'] )
+					);
+				}
+			} else {
+				// we push to start the sync here.
+				printf(
+					'<div><strong>%1$s</strong>: <input class="full_sync" id="%1$s_full_sync" type="button" name="%1$s_full_sync" value="%2$s" class="button button-secondary" /><p id="%1$s_full_sync_details" style="display:none;"></p></div>',
+					esc_attr( $repo ),
+					esc_html__( 'Start synchronizing all issues', 'ghactivity' )
+				);
+			}
+		}
+	} else {
+		esc_html_e( 'You currently do not monitor activity on any repository. You cannot use this option yet.', 'ghactivity' );
+	}
+}
+
 /**
  * Sanitize and validate input.
  *
@@ -201,7 +282,7 @@ function ghactivity_repos_monitoring_callback() {
  */
 function ghactivity_settings_validate( $input ) {
 	$input['username']        = sanitize_text_field( $input['username'] );
-	$input['client_id']       = sanitize_key( $input['access_token'] );
+	$input['access_token']    = sanitize_key( $input['access_token'] );
 	$input['display_private'] = (bool) $input['display_private'];
 	$input['repos']           = sanitize_text_field( $input['repos'] );
 	return $input;
