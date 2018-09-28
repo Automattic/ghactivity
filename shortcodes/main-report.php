@@ -265,7 +265,7 @@ function jeherve_ghactivity_short_markup( $atts ) {
 					'title'      => $issue->title,
 					'comments'   => $issue->comments,
 					'created_at' => date_i18n( get_option( 'date_format' ), strtotime( $issue->created_at ) ),
-					'milestone'  => ( $issue->milestone->title ? $issue->milestone->title : '' ),
+					'milestone'  => ( ! empty( $issue->milestone->title ) ? $issue->milestone->title : '' ),
 				);
 			}
 
