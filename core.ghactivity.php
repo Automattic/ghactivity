@@ -301,68 +301,6 @@ class GHActivity_Calls {
 	}
 
 	/**
-	 * Filter the labels we get to only keep the most important status.
-	 *
-	 * @since 2.0.0
-	 *
-	 * @param array $labels Array of labels for one issue/PR.
-	 *
-	 * @return string $status Custom post status.
-	 */
-	private function filter_status_labels( $labels ) {
-		// Clean up our label list first.
-		foreach ( $labels as $label ) {
-			// Check if the label name includes the word "Status". If not, let's ignore.
-			if ( false === strpos( $label, 'Status' ) ) {
-				unset( $labels[ $label ] );
-				continue;
-			}
-
-			/**
-			 * Filter our status labels, and remove labels that include words set in that array.
-			 *
-			 * @since 2.0.0
-			 *
-			 * @param array $excluded_labels Array of words that will cause a label not to be used as status.
-			 */
-			$excluded_label_blacklist = apply_filters( 'ghactivity_status_label_blacklist', array() );
-
-			foreach ( $excluded_label_blacklist as $word ) {
-				if ( false === strpos( $label, $word ) ) {
-					unset( $labels[ $label ] );
-				}
-			}
-		}
-
-		// Now give priority to issues where we "need" something, since that means we still have an action to take.
-		$needs_dev_words = apply_filters( 'ghactivity_status_label_dev_list', array() );
-		if ( in_array( $needs_dev_words, $labels ) ) {
-			return 'needs-dev';
-		}
-
-		// Not awaiting dev, but maybe awaiting for support?
-		$needs_support_words = apply_filters( 'ghactivity_status_label_support_list', array() );
-		if ( in_array( $needs_support_words, $labels ) ) {
-			return 'needs-support';
-		}
-
-		// Not awaiting support, but maybe awaiting for an additional level of support?
-		$needs_more_support_words = apply_filters( 'ghactivity_status_label_investigate_list', array() );
-		if ( in_array( $needs_more_support_words, $labels ) ) {
-			return 'needs-investigation';
-		}
-
-		// Maybe it's already been triaged?
-		$triaged_words = apply_filters( 'ghactivity_status_label_triaged_list', array() );
-		if ( in_array( $triaged_words, $labels ) ) {
-			return 'triaged';
-		}
-
-		// Fallback.
-		return 'publish';
-	}
-
-	/**
 	 * Get an event type to use as a taxonomy, and in the post content.
 	 *
 	 * Starts from data collected with GitHub API, and displays a nice event type instead.
@@ -707,23 +645,6 @@ class GHActivity_Calls {
 			$comments = ( isset( $event->payload->comments ) ? $event->payload->comments : 0 );
 		}
 
-		/**
-		 * Change status based on state and labels.
-		 * Reopened issues should fall back in needing triage.
-		 * Closed issues should be marked as triaged.
-		 */
-		if ( 'closed' === $state ) {
-			$status = 'triaged';
-		} elseif ( 'reopened' === $state ) {
-			$status = 'publish';
-		} elseif ( 'open' === $state ) {
-			/**
-			 * Clean up label list to keep important status labels.
-			 * We will use the most important status label as post status.
-			 */
-			$status = $this->filter_status_labels( $labels );
-		}
-
 		// Record event.
 		$issue_details = array(
 			'type'       => $issue_type,
@@ -736,7 +657,6 @@ class GHActivity_Calls {
 			'comments'   => $comments,
 			'creator'    => $creator,
 			'labels'     => $labels,
-			'status'     => $status,
 		);
 		$this->record_issue_details( $issue_details );
 	}
@@ -758,7 +678,6 @@ class GHActivity_Calls {
 	 * 		@type int    $comments   Number of comments on the issue.
 	 * 		@type string $creator    Issue creator.
 	 * 		@type array  $labels     Array of labels for that issue.
-	 * 		@type string $status     Custom Post Status.
 	 * }
 	 */
 	private function record_issue_details( $issue_details ) {
@@ -827,7 +746,7 @@ class GHActivity_Calls {
 			$issue_args = array(
 				'post_title'   => $issue_details['title'],
 				'post_type'    => 'ghactivity_issue',
-				'post_status'  => $issue_details['status'],
+				'post_status'  => 'publish',
 				'post_date'    => $issue_details['created_at'],
 				'tax_input'    => $taxonomies,
 				'meta_input'   => $meta,
@@ -867,7 +786,6 @@ class GHActivity_Calls {
 			$issue_args = array(
 				'ID'           => $post_id,
 				'post_title'   => $issue_details['title'],
-				'post_status'  => $issue_details['status'],
 				'meta_input'   => $meta,
 				'tax_input'    => $taxonomies,
 				'post_content' => $post_content,
