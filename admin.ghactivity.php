@@ -102,10 +102,24 @@ function ghactivity_options_init() {
 
 	// Init label scan Section.
 	add_settings_section(
+		'ghactivity_restart_triggers',
+		__( 'Restart calculations', 'ghactivity' ),
+		'ghactivity_retrigger_callback',
+		'ghactivity'
+	);
+	add_settings_field(
 		'ghactivity_label_scan',
 		__( 'Initialize GitHub labels scan', 'ghactivity' ),
 		'ghactivity_label_scan_callback',
-		'ghactivity'
+		'ghactivity',
+		'ghactivity_restart_triggers'
+	);
+	add_settings_field(
+		'ghactivity_redo_graphs',
+		__( 'Re-build Graphs', 'ghactivity' ),
+		'ghactivity_redo_graphs_callback',
+		'ghactivity',
+		'ghactivity_restart_triggers'
 	);
 
 	// Full issue sync section.
@@ -330,6 +344,17 @@ function ghactivity_do_settings() {
 }
 
 /**
+ * Manual triggers section
+ *
+ * @since 2.0.0
+ */
+function ghactivity_retrigger_callback() {
+	echo '<p>';
+	esc_html_e( 'These buttons allow you to restart actions in your GHactivity logs.', 'ghactivity' );
+	echo '</p>';
+}
+
+/**
  * GitHub Label Scan section.
  *
  * @since 2.1.0
@@ -340,7 +365,7 @@ function ghactivity_label_scan_callback() {
 	echo '</p>';
 
 	echo '<div class="wrap">';
-	echo '<button onclick="triggerLabelScan()">';
+	echo '<button onclick="triggerLabelScan()" class="button button-secondary">';
 	esc_html_e( 'Trigger Label Rescan', 'ghactivity' );
 	echo '</button>';
 	echo '</div>';
@@ -404,4 +429,15 @@ function label_scan_action() {
 		sleep( 120 );
 	}
 	wp_die(); // this is required to terminate immediately and return a proper response.
+}
+
+/**
+ * Add a button to re-build our graphs.
+ *
+ */
+function ghactivity_redo_graphs_callback() {
+	printf(
+		'<div><input id="ghactivity_redo_graphs" type="button" name="ghactivity_redo_graphs" value="%s" class="button button-secondary" /><p id="ghactivity_redo_graphs_output" style="display:none;"></p></div>',
+		esc_html__( 'Re-build the report graphs', 'ghactivity' )
+	);
 }
