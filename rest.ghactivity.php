@@ -101,9 +101,7 @@ class Ghactivity_Api {
 	 * @return bool $permission Returns true if user is allowed to call the API.
 	 */
 	public function permissions_check( $request ) {
-		// return current_user_can( 'manage_options' );
-		// Keep this public for now.
-		return true;
+		return current_user_can( 'manage_options' );
 	}
 
 	/**
