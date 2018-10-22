@@ -20,4 +20,19 @@ jQuery( document ).ready( function( $ ) {
 			$( '#' + repo + '_full_sync_details' ).html( response ).show();
 		});
 	});
+
+	// When clicking on the button to rebuild graphs, call that function.
+	$( '#ghactivity_redo_graphs' ).on( 'click', function( e ) {
+		// Make a query to our custom endpoint to rebuild the graphs.
+		$.ajax({
+			url: ghactivity_settings.api_url + 'ghactivity/v1/build/graphs',
+			method: 'POST',
+			beforeSend : function( xhr ) {
+				xhr.setRequestHeader( 'X-WP-Nonce', ghactivity_settings.api_nonce );
+			}
+		}).done( function ( response ) {
+			$( '#ghactivity_redo_graphs_output' ).addClass( 'disabled' );
+			$( '#ghactivity_redo_graphs_output' ).html( response ).show();
+		});
+	});
 });

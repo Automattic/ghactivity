@@ -78,6 +78,17 @@ class Ghactivity_Api {
 				),
 			),
 		) );
+
+		/**
+		 * Rebuild all graphs on the site.
+		 *
+		 * @since 2.0.0
+		 */
+		register_rest_route( 'ghactivity/v1', '/build/graphs', array(
+			'methods'             => WP_REST_Server::EDITABLE,
+			'callback'            => array( $this, 'redo_graphs' ),
+			'permission_callback' => array( $this, 'permissions_check' ),
+		) );
 	}
 
 	/**
@@ -343,6 +354,25 @@ class Ghactivity_Api {
 			'records' => $records,
 		);
 		return new WP_REST_Response( $response, 200 );
+	}
+
+	/**
+	 * Rebuild all graphs on the site.
+	 *
+	 * @since 2.0.0
+	 *
+	 * @param WP_REST_Request $request Full details about the request.
+	 *
+	 * @return WP_REST_Response $response Response from the Build Graphs function.
+	 */
+	public function redo_graphs( $request ) {
+		// Schedule a single event that will start in 2 seconds and build the graphs.
+		wp_schedule_single_event( time(), 'gh_query_average_label_time' );
+
+		return new WP_REST_Response(
+			esc_html__( 'The graphs are now being rebuilt. Give it a bit of time.', 'ghactivity' ),
+			200
+		);
 	}
 } // End class.
 new Ghactivity_Api();
