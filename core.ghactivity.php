@@ -1023,7 +1023,7 @@ class GHActivity_Calls {
 			$status = array(
 				'status' => 'in_progress',
 				// dividing by 100 here because we are getting 100 issues per page.
-				'pages'  => round( $this->get_repo_issues( $repo->name ) / 100 ),
+				'pages'  => ( floor( $this->get_repo_issues( $repo->name ) / 100 ) + 1 ),
 			);
 			// Update our option.
 			$this->update_option( $repo_slug . '_full_sync', $status );
@@ -1053,7 +1053,7 @@ class GHActivity_Calls {
 
 			// One page less to go.
 			$status['pages']--;
-		} while ( 'in_progress' === $status['status'] && 0 != $status['pages'] );
+		} while ( 'in_progress' === $status['status'] && 0 !== $status['pages'] );
 
 		// We're done. Save options.
 		$status = array(
