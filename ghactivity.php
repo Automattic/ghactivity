@@ -43,12 +43,12 @@ class Jeherve_GHActivity {
 
 	public function load_plugin() {
 		// Load core functions.
+		require_once( GHACTIVITY__PLUGIN_DIR . 'github.ghactivity.php' );
 		require_once( GHACTIVITY__PLUGIN_DIR . 'core.ghactivity.php' );
 		require_once( GHACTIVITY__PLUGIN_DIR . 'cpt.ghactivity.php' );
 		require_once( GHACTIVITY__PLUGIN_DIR . 'rest.ghactivity.php' );
 		require_once( GHACTIVITY__PLUGIN_DIR . 'queries.ghactivity.php' );
 		require_once( GHACTIVITY__PLUGIN_DIR . 'schedule.ghactivity.php' );
-		require_once( GHACTIVITY__PLUGIN_DIR . 'github.ghactivity.php' );
 
 		// Settings panel.
 		if ( is_admin() ) {

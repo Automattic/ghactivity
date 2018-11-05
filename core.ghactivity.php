@@ -780,13 +780,6 @@ class GHActivity_Calls {
 
 		// let's start looping.
 		do {
-			// $query_url   = sprintf(
-			// 	'https://api.github.com/repos/%1$s/issues?access_token=%2$s&page=%3$s&per_page=100',
-			// 	esc_html( $repo->name ),
-			// 	$this->get_option( 'access_token' ),
-			// 	$status['pages']
-			// );
-			// $issues_body = $this->get_github_data( $query_url );
 			$issues_body = $this->api->get_github_issues( $repo->name, $status['pages'] );
 
 			/**

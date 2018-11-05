@@ -284,7 +284,7 @@ class GHActivity_GHApi {
 		$query_url = sprintf(
 			'https://api.github.com/repos/%1$s/events?access_token=%2$s',
 			esc_html( $repo_name ),
-			$this->get_option( 'access_token' )
+			$this->token
 		);
 
 		return $this->get_github_data( $query_url );
