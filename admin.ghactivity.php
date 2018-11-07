@@ -417,7 +417,7 @@ function label_scan_action() {
 				'object_ids' => $post_id,
 				'taxonomy'   => 'ghactivity_repo',
 			) )[0]->name;
-			$response     = $gha->get_github_issue_events( $repo_name, $issue_number );
+			$response     = $gha->api->get_github_issue_events( $repo_name, $issue_number );
 			$options      = array(
 				'issue_number' => $issue_number,
 				'repo_name'    => $repo_name,
