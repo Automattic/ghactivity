@@ -4,7 +4,7 @@
  *
  * https://developer.github.com/v3/
  *
- * @since x.0.0
+ * @since 2.0.0
  */
 class GHActivity_GHApi {
 	private $token;
