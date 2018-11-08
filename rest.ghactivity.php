@@ -113,6 +113,23 @@ class Ghactivity_Api {
 		register_rest_route( 'ghactivity/v1', '/remove-duplicated-issues', array(
 			'methods'  => WP_REST_Server::READABLE,
 			'callback' => array( $this, 'schedule_duplicate_cleanup' ),
+			) );
+
+			/**
+		 * Get repo label state for specific repo.
+		 *
+		 * @since 2.1.0
+		 */
+		register_rest_route( 'ghactivity/v1', '/queries/repo-label-state/repo/(?P<repo>[0-9a-z\-_\/]+)', array(
+			'methods'             => WP_REST_Server::READABLE,
+			'callback'            => array( $this, 'get_label_repo_state' ),
+			'permission_callback' => array( $this, 'permissions_check' ),
+			'args'                => array(
+				'repo' => array(
+					'required'          => true,
+					'validate_callback' => array( $this, 'validate_string' ),
+				),
+			),
 		) );
 	}
 
@@ -470,5 +487,38 @@ class Ghactivity_Api {
 		}
 		update_option( 'ghactivity_removed_duplicate_issues', 'done' );
 	}
+	/**
+	 * FIXME
+	 *
+	 * @since 2.1.0
+	 *
+	 * @param WP_REST_Request $request Full details about the request.
+	 *
+	 * @return WP_REST_Response $response Stats for a specific repo.
+	 */
+	public function get_label_repo_state( $request ) {
+		if ( isset( $request['repo'] ) ) {
+			$repo = esc_html( $request['repo'] );
+		} else {
+			return new WP_Error(
+				'not_found',
+				esc_html__( 'You did not specify a valid GitHub repo', 'ghactivity' ),
+				array(
+					'status' => 404,
+				)
+			);
+		}
+
+		// [ current_label_state, current_label_state_date], [ previous_label_state, previous_label_state_date ]
+		$records = GHActivity_Queries::fetch_repo_label_state( $repo );
+
+		$response = array(
+			'repo'                 => $repo,
+			'current_label_state'  => $records[0],
+			'previous_label_state' => $records[1],
+		);
+		return new WP_REST_Response( $response, 200 );
+	}
+
 } // End class.
 new Ghactivity_Api();
