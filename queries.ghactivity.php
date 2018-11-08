@@ -339,26 +339,8 @@ class GHActivity_Queries {
 			$intersected_meta = array_intersect_key( $intersected_meta, $meta );
 		}
 
-		/**
-		 * Iterate over all the records and capture only opened & currently labeled issues
-		 * Also fills the $dates & $slugs arrays with slugs and labeled dates
-		 */
-		foreach ( $intersected_meta as $repo_slug => $serialized ) {
-			// count only issues from specific repo.
-			if ( strpos( strtolower( $repo_slug ), strtolower( $repo_name ) ) === 0 ) {
-				$issue_number = explode( '#', $repo_slug )[1];
-				$post_id      = self::find_open_gh_issue( $repo_name, $issue_number );
-				$label_ary    = unserialize( $serialized[0] );
-
-				// We want to capture only opened, labeled issues.
-				if ( $post_id && 'labeled' === $label_ary['status'] ) {
-					$time                = time() - strtotime( $label_ary['labeled'] );
-					$dates[]             = $time;
-					$slugs[ $repo_slug ] = $time;
-				}
-			}
-		}
-		return array( (int) array_sum( $dates ) / count( $dates ), $slugs );
+		$filtered_labels = self::filter_labeled_labels( $intersected_meta, $repo_name );
+		return array( (int) array_sum( $filtered_labels[1] ) / count( $filtered_labels[1] ), $filtered_labels[0] );
 	}
 
 	public static function find_open_gh_issue( $repo_name, $issue_number ) {
@@ -524,7 +506,6 @@ class GHActivity_Queries {
 				),
 			),
 		);
-
 		// FIXME: Add caching
 		$posts = get_posts( $args );
 
@@ -585,9 +566,16 @@ class GHActivity_Queries {
 	}
 
 	/**
-	 * Returns array of post_ids of open issues for specified repo
+	 * Search for all existing `ghactivity_issue` posts
+	 * Return array of post_ids if found, and null if not.
+	 *
+	 * @since 2.0.0
+	 *
+	 * @param string $repo_name name of the repo.
+	 *
+	 * @return array $posts Return array of the open issue objects of specified repo.
 	 */
-	public static function get_all_open_gh_issues( $repo_name ) {
+	public static function get_all_open_gh_issue( $repo_name ) {
 		$is_open_args = array(
 			'post_type'      => 'ghactivity_issue',
 			'post_status'    => 'publish',
@@ -607,6 +595,7 @@ class GHActivity_Queries {
 				),
 			),
 		);
+
 		$posts_ids = wp_cache_get( 'all_open_gh_issues_' . $repo_name );
 		if ( false === $posts_ids ) {
 			$posts_ids = get_posts( $is_open_args );
@@ -614,5 +603,136 @@ class GHActivity_Queries {
 			wp_cache_set( 'all_open_gh_issues_' . $repo_name, $posts_ids, '', 30 * 60 /** 30 min */ );
 		}
 		return $posts_ids;
+	}
+
+	/**
+	 * Walking through label meta and filters out labels from other repos, from closed issues, and unlabeled labels
+	 * Returns an array of array of label slugs and passed time since it was labeled
+	 *
+	 * @since 2.0.0
+	 *
+	 * @param array  $meta Array of label meta objects.
+	 * @param string $repo_name name of the repo.
+	 *
+	 * @return array
+	 */
+	public static function filter_labeled_labels( $meta, $repo_name ) {
+		$dates = array();
+		$slugs = array();
+		foreach ( $meta as $repo_slug => $serialized ) {
+			// count only issues from specific repo.
+			if ( strpos( strtolower( $repo_slug ), strtolower( $repo_name ) ) === 0 ) {
+				$issue_number = explode( '#', $repo_slug )[1];
+				$post_id      = self::find_open_gh_issue( $repo_name, $issue_number );
+				$label_ary    = unserialize( $serialized[0] );
+
+				// We want to capture only opened, labeled issues.
+				if ( $post_id && 'labeled' === $label_ary['status'] ) {
+					$time                = time() - strtotime( $label_ary['labeled'] );
+					$dates[]             = $time;
+					$slugs[ $repo_slug ] = $time;
+				}
+			}
+		}
+
+		return array( $slugs, $dates );
+	}
+
+	/**
+	 * Returns associated array of repo labels and issue slugs labeled with these labels
+	 *
+	 * @since 2.0.0
+	 *
+	 * @param string $repo_name name of the repo.
+	 *
+	 * @return array
+	 */
+	public static function current_repo_labels_state( $repo_name ) {
+		$query = array(
+			'taxonomy' => 'ghactivity_repo',
+			'name'     => $repo_name,
+		);
+
+		$repo_term   = get_terms( $query )[0];
+		$repo_labels = get_term_meta( $repo_term->term_id, 'repo_labels', 1 );
+		$label_terms = get_terms(
+			array( 'taxonomy' => 'ghactivity_issues_labels' )
+		);
+
+		// Filters out label_terms which is part of the repo.
+		// We might want to strtolower during compartion, to mage sure we not miss some of the labels.
+		$repo_label_terms = array_values(
+			array_filter(
+				$label_terms,
+				function ( $t ) use ( $repo_labels ) {
+					return in_array( $t->name, $repo_labels );
+				}
+			)
+		);
+
+		$repo_label_issues = array();
+		foreach ( $repo_label_terms as $term ) {
+			$meta  = get_term_meta( $term->term_id );
+			// Get only repo slugs such as `"Automattic/jetpack#9925" => 9770274,`.
+			$slugs = self::filter_labeled_labels( $meta, $repo_name )[0];
+			$slugs = array_keys( $slugs );
+
+			$repo_label_issues[ $term->name ] = $slugs;
+		}
+
+		return $repo_label_issues;
+	}
+
+	/**
+	 * Fetching all the the posts marked with `repo_label_state` taxonomy for specified repo
+	 * Returns array of 2 posts. Tries to pick up most recent posts with ~1 week difference
+	 *
+	 * @since 2.0.0
+	 *
+	 * @param string $repo_slug repository slug which same as for ghactivity_repo term.
+	 *
+	 * @return array
+	 */
+	public static function fetch_repo_label_state( $repo_slug ) {
+		$args = array(
+			'post_type'      => 'gh_query_record',
+			'post_status'    => 'publish',
+			'posts_per_page' => -1,
+			'orderby'        => 'date',
+			'order'          => 'DESC',
+			'tax_query'      => array(
+				'relation' => 'AND',
+				array(
+					'taxonomy' => 'ghactivity_query_record_type',
+					'field'    => 'name',
+					'terms'    => 'repo_label_state',
+				),
+				array(
+					'taxonomy' => 'ghactivity_repo',
+					'field'    => 'slug',
+					'terms'    => $repo_slug,
+				),
+			),
+		);
+
+		// FIXME: Add caching
+		$posts = get_posts( $args );
+		$first_post = array_shift( $posts );
+		$first_post_date = strtotime( $first_post->post_date );
+		$prev_week = time() - ( 7 * 24 * 60 * 60 ); // 7 days
+
+		$second_post = array_pop( $posts );
+		foreach ( $posts as $post ) {
+			$post_is_week_old = $first_post_date - strtotime( $post->post_date ) > $prev_week;
+			if ( $post_is_week_old ) {
+				$second_post = $post;
+				break;
+			}
+		}
+
+		return array(
+			array( get_post_meta( $first_post->ID, 'final_state', true ), $first_post->post_date ),
+			array( get_post_meta( $second_post->ID, 'final_state', true ), $second_post->post_date ),
+		);
 	}
 }
