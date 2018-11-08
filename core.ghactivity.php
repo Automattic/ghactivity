@@ -24,7 +24,7 @@ class GHActivity_Calls {
 		// Trigger a single event to launch the full sync loop.
 		add_action( 'ghactivity_full_issue_sync', array( $this, 'full_issue_sync' ), 10, 1 );
 
-		$this->api = new GHActivity_GHApi( $this->get_option( 'access_token' ) );
+		$this->api = new GHActivity_GHApi();
 	}
 	/**
 	 * Get option saved in the plugin's settings screen.

@@ -9,8 +9,9 @@
 class GHActivity_GHApi {
 	private $token;
 
-	function __construct( $token ) {
-		$this->token = $token;
+	function __construct() {
+		$options     = get_option( 'ghactivity' );
+		$this->token = $options['access_token'];
 	}
 
 	/**
@@ -380,5 +381,48 @@ class GHActivity_GHApi {
 	 */
 	private function project_api_headers() {
 		return array( 'accept' => 'application/vnd.github.inertia-preview+json' );
+	}
+
+	/**
+	 * Get the list of repo label names from GH API
+	 *
+	 * @since 2.0.0
+	 *
+	 * @param string $repo_name Name of the repo we are interested in.
+	 *
+	 * @return array Array of repo label names.
+	 */
+	public function get_repo_label_names( $repo_name ) {
+		if ( empty( $repo_name ) ) {
+			// Fallback.
+			return array();
+		}
+
+		$page       = 1;
+		$all_labels = array();
+		$query_url  = sprintf(
+			'https://api.github.com/repos/%1$s/labels?access_token=%2$s&per_page=100',
+			$repo_name,
+			$this->token
+		);
+
+		// Fetch API until empty array will be returned.
+		do {
+			$paged_query_url = $query_url . '&page=' . $page;
+			$body            = $this->get_github_data( $paged_query_url );
+			$all_labels      = array_merge( $all_labels, $body );
+			$page++;
+		} while ( ! empty( $body ) );
+
+		if ( empty( $all_labels ) ) {
+			return array();
+		}
+
+		return array_map(
+			function ( $label ) {
+				return $label->name;
+			},
+			$all_labels
+		);
 	}
 }
