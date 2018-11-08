@@ -660,7 +660,7 @@ class GHActivity_Queries {
 		);
 
 		// Filters out label_terms which is part of the repo.
-		// We might want to strtolower during compartion, to mage sure we not miss some of the labels.
+		// We might want to strtolower during comparison, to mage sure we not miss some of the labels.
 		$repo_label_terms = array_values(
 			array_filter(
 				$label_terms,
@@ -691,7 +691,7 @@ class GHActivity_Queries {
 	 *
 	 * @param string $repo_slug repository slug which same as for ghactivity_repo term.
 	 *
-	 * @return array
+	 * @return array [ current_label_state, current_label_state_date], [ previous_label_state, previous_label_state_date ]
 	 */
 	public static function fetch_repo_label_state( $repo_slug ) {
 		$args = array(
