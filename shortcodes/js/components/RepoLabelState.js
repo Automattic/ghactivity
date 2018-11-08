@@ -108,7 +108,13 @@ class RepoLabelState extends Component {
 
 		return (
 			<div>
+				<div>
 					{ JSON.stringify( currentLabelState ) }
+				</div>
+				<div>
+					{ JSON.stringify( previousLabelState ) }
+				</div>
+
 				{/* <div>
 					{ this.renderDoughnut( currentLabelState[0].Pri ) }
 				</div>
