@@ -487,8 +487,9 @@ class Ghactivity_Api {
 		}
 		update_option( 'ghactivity_removed_duplicate_issues', 'done' );
 	}
+
 	/**
-	 * FIXME
+	 * Gets current and previous repo states to be used in a shortcode
 	 *
 	 * @since 2.1.0
 	 *

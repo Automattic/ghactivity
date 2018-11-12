@@ -17,9 +17,9 @@ class GHActivity_Schedule {
 			wp_schedule_event( time(), 'daily', 'gh_query_project_stats' );
 		}
 
-		add_action( 'gh_query_update_repo_labels', array( $this, 'record_repo_labels' ) );
-		if ( ! wp_next_scheduled( 'gh_query_update_repo_labels' ) ) {
-			wp_schedule_event( time(), 'daily', 'gh_query_update_repo_labels' );
+		add_action( 'gh_query_update_repo_meta', array( $this, 'record_repo_meta' ) );
+		if ( ! wp_next_scheduled( 'gh_query_update_repo_meta' ) ) {
+			wp_schedule_event( time(), 'daily', 'gh_query_update_repo_meta' );
 		}
 
 		add_action( 'gh_query_repo_labels_state', array( $this, 'record_current_repo_labels_state' ) );
@@ -115,14 +115,16 @@ class GHActivity_Schedule {
 	 *
 	 * @since 2.0.0
 	 */
-	public function record_repo_labels() {
+	public function record_repo_meta() {
 		$api   = new GHActivity_GHApi();
 		$repos = GHActivity_Queries::get_monitored_repos();
 
 		foreach ( $repos as $term_id => $name ) {
 			$labels = $api->get_repo_label_names( $name );
 			update_term_meta( $term_id, 'repo_labels', $labels );
-		}
+
+			$open_issues_count = $api->get_repo_open_issues_count( $name );
+			update_term_meta( $term_id, 'open_issues_count', $open_issues_count );		}
 	}
 
 	/**
@@ -136,9 +138,14 @@ class GHActivity_Schedule {
 		$repos = GHActivity_Queries::get_monitored_repos();
 
 		foreach ( $repos as $term_id => $repo_name ) {
-			$repo_labels_state = GHActivity_Queries::current_repo_labels_state( $repo_name );
-			$final_state       = array();
-			foreach ( $repo_labels_state as $label => $issue_slugs ) {
+			$repo_labels_state      = GHActivity_Queries::current_repo_labels_state( $repo_name );
+			$repo_label_issues      = $repo_labels_state[0];
+			$repo_open_issues_count = $repo_labels_state[1];
+			$final_state            = array();
+			// We are interest in number of labeled issues rather then the issue numbers.
+			// Also we would like to split this list into label categories.
+			// TODO: maybe move categorising code into shortcode/frontend code since it seems more logical to have it there.
+			foreach ( $repo_label_issues as $label => $issue_slugs ) {
 				if ( strpos( $label, ']' ) !== false ) {
 					$label_type = explode( ' ', $label )[0];
 					$label_type = str_replace( '[', '', $label_type );
@@ -171,7 +178,10 @@ class GHActivity_Schedule {
 				'post_type'   => 'gh_query_record',
 				'post_status' => 'publish',
 				'tax_input'   => $taxonomies,
-				'meta_input'  => array( 'final_state' => $final_state ),
+				'meta_input'  => array(
+					'final_state'       => $final_state,
+					'open_issues_count' => $repo_open_issues_count,
+				),
 			);
 			$post_id = wp_insert_post( $event_args );
 

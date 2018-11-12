@@ -645,7 +645,7 @@ class GHActivity_Queries {
 	 *
 	 * @param string $repo_name name of the repo.
 	 *
-	 * @return array
+	 * @return array It looks like: [ [ "Widget Visibility" => [ "Automattic/jetpack#681", "Automattic/jetpack#10538"] ], $repo_open_issues_count ]
 	 */
 	public static function current_repo_labels_state( $repo_name ) {
 		$query = array(
@@ -653,9 +653,10 @@ class GHActivity_Queries {
 			'name'     => $repo_name,
 		);
 
-		$repo_term   = get_terms( $query )[0];
-		$repo_labels = get_term_meta( $repo_term->term_id, 'repo_labels', 1 );
-		$label_terms = get_terms(
+		$repo_term              = get_terms( $query )[0];
+		$repo_labels            = get_term_meta( $repo_term->term_id, 'repo_labels', 1 );
+		$repo_open_issues_count = get_term_meta( $repo_term->term_id, 'open_issues_count', 1 );
+		$label_terms            = get_terms(
 			array( 'taxonomy' => 'ghactivity_issues_labels' )
 		);
 
@@ -680,7 +681,7 @@ class GHActivity_Queries {
 			$repo_label_issues[ $term->name ] = $slugs;
 		}
 
-		return $repo_label_issues;
+		return [ $repo_label_issues, $repo_open_issues_count ];
 	}
 
 	/**
@@ -691,7 +692,7 @@ class GHActivity_Queries {
 	 *
 	 * @param string $repo_slug repository slug which same as for ghactivity_repo term.
 	 *
-	 * @return array [ current_label_state, current_label_state_date], [ previous_label_state, previous_label_state_date ]
+	 * @return array [ current_label_state, open_issues_count, current_label_state_date], [ previous_label_state, open_issues_count, previous_label_state_date ]
 	 */
 	public static function fetch_repo_label_state( $repo_slug ) {
 		$args = array(
@@ -731,8 +732,16 @@ class GHActivity_Queries {
 		}
 
 		return array(
-			array( get_post_meta( $first_post->ID, 'final_state', true ), $first_post->post_date ),
-			array( get_post_meta( $second_post->ID, 'final_state', true ), $second_post->post_date ),
+			array(
+				get_post_meta( $first_post->ID, 'final_state', true ),
+				get_post_meta( $first_post->ID, 'open_issues_count', true ),
+				$first_post->post_date,
+			),
+			array(
+				get_post_meta( $second_post->ID, 'final_state', true ),
+				get_post_meta( $second_post->ID, 'open_issues_count', true ),
+				$second_post->post_date,
+			),
 		);
 	}
 }
