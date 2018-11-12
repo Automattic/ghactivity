@@ -706,7 +706,7 @@ class GHActivity_Calls {
 			$status = array(
 				'status' => 'in_progress',
 				// dividing by 100 here because we are getting 100 issues per page.
-				'pages'  => ( floor( $this->api->get_repo_issues_count( $repo->name ) / 100 ) + 1 ),
+				'pages'  => ( floor( $this->api->get_repo_open_issues_count( $repo->name ) / 100 ) + 1 ),
 			);
 			// Update our option.
 			$this->update_option( $repo_slug . '_full_sync', $status );

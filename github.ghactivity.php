@@ -165,7 +165,7 @@ class GHActivity_GHApi {
 	 *
 	 * @return int $issues_number Number of open issues.
 	 */
-	public function get_repo_issues_count( $repo_name ) {
+	public function get_repo_open_issues_count( $repo_name ) {
 		if ( empty( $repo_name ) ) {
 			// Fallback.
 			return 0;
@@ -222,7 +222,7 @@ class GHActivity_GHApi {
 	}
 
 	/**
-	 * Remote call to get all label events for every monitored repo
+	 * Remote call to get issue objects. Request returns up to 100 issues per request.
 	 *
 	 * @since 2.1.0
 	 *
