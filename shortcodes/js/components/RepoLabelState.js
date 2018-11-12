@@ -107,9 +107,6 @@ class RepoLabelState extends Component {
 		return colors;
 	}
 
-
-
-
 	render() {
 		const { currentLabelState, previousLabelState } = this.state;
 
@@ -123,8 +120,6 @@ class RepoLabelState extends Component {
 
 		const priLabeledCount = Object.values( currentLabelState[0].Pri ).reduce( ( acc, val ) => acc + val, 0 );
 		const priLabeledPercentage = Math.floor( priLabeledCount / currentLabelState[1] * 100 );
-
-		// const noneMostUsedLabels =
 
 		let topNoneLabels = Object.entries( currentLabelState[0].none );
 		topNoneLabels.sort( (a, b) => b[1] - a[1] );
