@@ -1,5 +1,3 @@
-// RepoLabelState
-
 /**
  * External dependencies
  */
@@ -44,7 +42,6 @@ class RepoLabelState extends Component {
 			} );
 	}
 
-	// data.current_label_state[0].Pri
 	renderDoughnut(dataObject) {
 		const dataEntries = Object.entries( dataObject );
 		dataEntries.sort( (a, b) => a[1] - b[1] );
@@ -85,13 +82,78 @@ class RepoLabelState extends Component {
 				]
 			}
 		}
-
 		return <Doughnut data={ chartArgs } options={ options } />
 	}
 
-	// renderSection( sectionType ) {
-	// 	const { currentLabelState, previousLabelState } = this.state;
-	// }
+	renderSection( sectionType ) {
+		const { currentLabelState, previousLabelState } = this.state;
+		let mainSection = 'empty';
+		const title = sectionType !== 'none' ? `Open issues by ${ sectionType }` : 'Other open issues'
+
+		const currentOpenLabelsCount = currentLabelState[1];
+		const currentLabelsListForType = currentLabelState[0][ sectionType ];
+		const currentLabelCounts = Object.keys( currentLabelsListForType ).length;
+
+		if ( sectionType === 'Type' ) {
+			mainSection = (
+				<div>
+					We have { currentOpenLabelsCount } open issues, including:
+					<ul>
+						<li>{ currentLabelsListForType['[Type] Bug'] } open bugs</li>
+						<li>{ currentLabelsListForType['[Type] Enhancement'] } open enhancement requests</li>
+					</ul>
+				</div>
+			)
+		} else if( sectionType === 'Pri' || sectionType === 'Status' ) {
+			let topLabelsSection = '';
+			const type = sectionType === 'Pri' ? 'Priority' : 'Status'
+			const labelTypeCount = Object.values( currentLabelsListForType ).reduce( ( acc, val ) => acc + val, 0 );
+			const labelTypePercentage = Math.floor( labelTypeCount / currentOpenLabelsCount * 100 );
+			if( labelTypeCount > 10 ) {
+				topLabelsSection = this.renderTopIssuesSection( currentLabelsListForType, 3)
+			}
+			mainSection = (
+				<div>
+					<p>
+						{ labelTypePercentage }% of the reported issues have its { type } set: { labelTypeCount } of { currentOpenLabelsCount }.
+					</p>
+					{ topLabelsSection }
+				</div>
+			)
+		} else if( currentLabelCounts > 20 )  {
+			const tenPercentCount = Math.floor( currentLabelCounts / 10 );
+			mainSection = this.renderTopIssuesSection( currentLabelsListForType, tenPercentCount)
+		} else {
+			mainSection = null;
+		}
+
+
+		return (
+			<div key={ sectionType }>
+				<hr />
+				<h3>{ title }</h3>
+				{ mainSection }
+				<div>
+					{ this.renderDoughnut( currentLabelsListForType ) }
+				</div>
+			</div>
+		)
+	}
+
+	renderTopIssuesSection( labelsList, issuesCount ) {
+		let topLabels = Object.entries( labelsList );
+		topLabels.sort( (a, b) => b[1] - a[1] );
+		topLabels = topLabels.slice(0, issuesCount);
+
+		return (
+			<div>
+				The areas with the most issues:
+				<ul>
+					{ topLabels.map( (labelArray, idx) => <li key={idx} >{ labelArray[0] } ({ labelArray[1] } open issues)</li>) }
+				</ul>
+			</div>
+		)
+	}
 
 	// https://stackoverflow.com/a/1484514/3078381
 	getRandomColors( count ) {
@@ -118,9 +180,6 @@ class RepoLabelState extends Component {
 			)
 		}
 
-		const priLabeledCount = Object.values( currentLabelState[0].Pri ).reduce( ( acc, val ) => acc + val, 0 );
-		const priLabeledPercentage = Math.floor( priLabeledCount / currentLabelState[1] * 100 );
-
 		let topNoneLabels = Object.entries( currentLabelState[0].none );
 		topNoneLabels.sort( (a, b) => b[1] - a[1] );
 		const tenPercentCount = Math.floor( topNoneLabels.length / 10 );
@@ -128,45 +187,8 @@ class RepoLabelState extends Component {
 
 		return (
 			<div>
-				<hr />
-				{/* Type Section */}
-				<div>
-					<p>
-						We have { currentLabelState[1] } open issues, including:
-					</p>
-					<ul>
-						<li>{ currentLabelState[0].Type['[Type] Bug'] } open bugs</li>
-						<li>{ currentLabelState[0].Type['[Type] Enhancement'] } open enhancement requests</li>
-					</ul>
-					<div>
-						{ this.renderDoughnut( currentLabelState[0].Type ) }
-					</div>
-				</div>
-				<hr />
-				{/* Priority Section */}
-				<div>
-					<p>
-						{ priLabeledPercentage }% of the reported issues have its priority set: { priLabeledCount } of { currentLabelState[1] }. These are broken down as:
-					</p>
-					<div>
-						{ this.renderDoughnut( currentLabelState[0].Pri ) }
-					</div>
-				</div>
-				<hr />
-				{/* none Section */}
-				<div>
-					<p>
-					The areas with the most issues:
-					</p>
-					<ul>
-						{ topNoneLabels.map( (labelArray, idx) => <li key={idx} >{labelArray[0]} ({labelArray[1]} open issues)</li>) }
-					</ul>
-					<div>
-						{ this.renderDoughnut( currentLabelState[0].none ) }
-					</div>
-				</div>
+				{ Object.keys( currentLabelState[0] ).map( labelType => this.renderSection( labelType ) )}
 			</div>
-
 		);
 	}
 }
