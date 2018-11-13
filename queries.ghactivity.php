@@ -371,10 +371,9 @@ class GHActivity_Queries {
 				),
 			),
 		);
-		$query = new WP_Query( $is_open_args );
-		if ( $query->have_posts() ) {
-			$query->the_post();
-			$post_id = $query->post->ID;
+		$posts = get_posts( $is_open_args );
+		if ( $posts ) {
+			$post_id = $posts[0];
 		}
 		wp_reset_postdata();
 
@@ -677,7 +676,7 @@ class GHActivity_Queries {
 		foreach ( $repo_label_terms as $id => $name ) {
 			$meta  = get_term_meta( $id );
 			// Get only repo slugs such as `"Automattic/jetpack#9925" => 9770274,`.
-			$slugs = self::filter_labeled_labels( $meta, $repo_name )[0];
+			$slugs = GHActivity_Queries::filter_labeled_labels( $meta, $repo_name )[0];
 			$slugs = array_keys( $slugs );
 
 			$repo_label_issues[ $name ] = $slugs;
