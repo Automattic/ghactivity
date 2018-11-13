@@ -380,6 +380,31 @@ class GHActivity_Queries {
 		return $post_id;
 	}
 
+	public static function get_all_open_gh_issues( $repo_name ) {
+		$is_open_args = array(
+			'post_type'      => 'ghactivity_issue',
+			'post_status'    => 'publish',
+			// 'fields'          => 'ids', // Only get post IDs
+			'posts_per_page' => -1,
+			'tax_query'      => array(
+				'relation' => 'AND',
+				array(
+					'taxonomy' => 'ghactivity_issues_state',
+					'field'    => 'name',
+					'terms'    => 'open',
+				),
+				array(
+					'taxonomy' => 'ghactivity_repo',
+					'field'    => 'name',
+					'terms'    => $repo_name,
+				),
+			),
+		);
+		$posts_ids = get_posts( $is_open_args );
+		wp_reset_postdata();
+		return $posts_ids;
+	}
+
 	/**
 	 * Search for a exisiting `ghactivity_issue` post
 	 * Return post_id if found, and null if not.
@@ -619,12 +644,19 @@ class GHActivity_Queries {
 	public static function filter_labeled_labels( $meta, $repo_name ) {
 		$dates = array();
 		$slugs = array();
+		$posts = self::get_all_open_gh_issues( $repo_name );
+		$post_id = null;
 		foreach ( $meta as $repo_slug => $serialized ) {
 			// count only issues from specific repo.
 			if ( strpos( strtolower( $repo_slug ), strtolower( $repo_name ) ) === 0 ) {
 				$issue_number = explode( '#', $repo_slug )[1];
-				$post_id      = self::find_open_gh_issue( $repo_name, $issue_number );
+				// $post_id      = self::find_open_gh_issue( $repo_name, $issue_number );
 				$label_ary    = unserialize( $serialized[0] );
+				foreach ( $posts as $post ) {
+					if ( get_post_meta( $post->ID, 'number', 1 ) === $issue_number ) {
+						$post_id = $post->ID;
+					}
+				}
 
 				// We want to capture only opened, labeled issues.
 				if ( $post_id && 'labeled' === $label_ary['status'] ) {
@@ -676,7 +708,7 @@ class GHActivity_Queries {
 		foreach ( $repo_label_terms as $id => $name ) {
 			$meta  = get_term_meta( $id );
 			// Get only repo slugs such as `"Automattic/jetpack#9925" => 9770274,`.
-			$slugs = GHActivity_Queries::filter_labeled_labels( $meta, $repo_name )[0];
+			$slugs = self::filter_labeled_labels( $meta, $repo_name )[0];
 			$slugs = array_keys( $slugs );
 
 			$repo_label_issues[ $name ] = $slugs;
