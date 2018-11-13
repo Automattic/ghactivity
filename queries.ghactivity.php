@@ -348,6 +348,7 @@ class GHActivity_Queries {
 		$is_open_args = array(
 			'post_type'      => 'ghactivity_issue',
 			'post_status'    => 'publish',
+			'fields'          => 'ids', // Only get post IDs
 			'posts_per_page' => 1,
 			'tax_query'      => array(
 				'relation' => 'AND',
@@ -657,28 +658,29 @@ class GHActivity_Queries {
 		$repo_labels            = get_term_meta( $repo_term->term_id, 'repo_labels', 1 );
 		$repo_open_issues_count = get_term_meta( $repo_term->term_id, 'open_issues_count', 1 );
 		$label_terms            = get_terms(
-			array( 'taxonomy' => 'ghactivity_issues_labels' )
+			array(
+				'taxonomy' => 'ghactivity_issues_labels',
+				'fields'   => 'id=>name',
+			)
 		);
 
 		// Filters out label_terms which is part of the repo.
 		// We might want to strtolower during comparison, to mage sure we not miss some of the labels.
-		$repo_label_terms = array_values(
-			array_filter(
-				$label_terms,
-				function ( $t ) use ( $repo_labels ) {
-					return in_array( $t->name, $repo_labels );
-				}
-			)
-		);
+		$repo_label_terms = array();
+		foreach ( $label_terms as $id => $name ) {
+			if ( in_array( $name, $repo_labels ) ) {
+				$repo_label_terms[ $id ] = $name;
+			}
+		}
 
 		$repo_label_issues = array();
-		foreach ( $repo_label_terms as $term ) {
-			$meta  = get_term_meta( $term->term_id );
+		foreach ( $repo_label_terms as $id => $name ) {
+			$meta  = get_term_meta( $id );
 			// Get only repo slugs such as `"Automattic/jetpack#9925" => 9770274,`.
 			$slugs = self::filter_labeled_labels( $meta, $repo_name )[0];
 			$slugs = array_keys( $slugs );
 
-			$repo_label_issues[ $term->name ] = $slugs;
+			$repo_label_issues[ $name ] = $slugs;
 		}
 
 		return [ $repo_label_issues, $repo_open_issues_count ];
@@ -717,10 +719,10 @@ class GHActivity_Queries {
 		);
 
 		// FIXME: Add caching
-		$posts = get_posts( $args );
-		$first_post = array_shift( $posts );
+		$posts           = get_posts( $args );
+		$first_post      = array_shift( $posts );
 		$first_post_date = strtotime( $first_post->post_date );
-		$prev_week = time() - ( 7 * 24 * 60 * 60 ); // 7 days
+		$prev_week       = time() - ( 7 * 24 * 60 * 60 ); // 7 days
 
 		$second_post = array_pop( $posts );
 		foreach ( $posts as $post ) {

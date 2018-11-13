@@ -135,6 +135,7 @@ class GHActivity_Schedule {
 	 * @since 2.0.0
 	 */
 	public function record_current_repo_labels_state() {
+		set_time_limit( 600 );
 		$repos = GHActivity_Queries::get_monitored_repos();
 
 		foreach ( $repos as $term_id => $repo_name ) {
