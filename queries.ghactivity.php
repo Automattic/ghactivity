@@ -723,11 +723,11 @@ class GHActivity_Queries {
 	 *
 	 * @since 2.0.0
 	 *
-	 * @param string $repo_slug repository slug which same as for ghactivity_repo term.
+	 * @param string $repo_name repository name which same as for ghactivity_repo term.
 	 *
 	 * @return array [ current_label_state, open_issues_count, current_label_state_date], [ previous_label_state, open_issues_count, previous_label_state_date ]
 	 */
-	public static function fetch_repo_label_state( $repo_slug ) {
+	public static function fetch_repo_label_state( $repo_name ) {
 		$args = array(
 			'post_type'      => 'gh_query_record',
 			'post_status'    => 'publish',
@@ -743,8 +743,8 @@ class GHActivity_Queries {
 				),
 				array(
 					'taxonomy' => 'ghactivity_repo',
-					'field'    => 'slug',
-					'terms'    => $repo_slug,
+					'field'    => 'name',
+					'terms'    => $repo_name,
 				),
 			),
 		);
