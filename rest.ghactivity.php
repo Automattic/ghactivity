@@ -332,7 +332,7 @@ class Ghactivity_Api {
 	public function get_average_label_time( $request ) {
 		if ( isset( $request['repo'] ) && isset( $request->get_query_params()['label'] ) ) {
 			$repo  = esc_html( $request['repo'] );
-			$label = esc_html( $request->get_query_params()['label'] );
+			$label = explode( ',', esc_html( $request->get_query_params()['label'] ) );
 		} else {
 			return new WP_Error(
 				'not_found',

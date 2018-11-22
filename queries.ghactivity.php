@@ -318,18 +318,32 @@ class GHActivity_Queries {
 	 * Usage: current_average_label_time('Automattic/jetpack', '[Status] Needs Review').
 	 *
 	 * @param string $repo_name name of the repo.
-	 * @param string $label issue label.
+	 * @param string|Array $labels string or array of labels.
 	 */
-	public static function current_average_label_time( $repo_name, $label ) {
+	public static function current_average_label_time( $repo_name, $labels ) {
 		$dates = array();
 		$slugs = array();
 		$query = array(
 			'taxonomy' => 'ghactivity_issues_labels',
-			'name'     => $label,
+			'name'     => $labels,
 		);
-		$term  = get_terms( $query )[0];
-		$meta  = get_term_meta( $term->term_id );
-		foreach ( $meta as $repo_slug => $serialized ) {
+
+		$terms            = get_terms( $query );
+		$first_term       = array_shift( $terms );
+		$intersected_meta = get_term_meta( $first_term->term_id );
+
+		// Find all the records which appears in every term meta.
+		// e.g. find issues which marked with the combination of all $labels.
+		foreach ( $terms as $term ) {
+			$meta  = get_term_meta( $term->term_id );
+			$intersected_meta = array_intersect_key( $intersected_meta, $meta );
+		}
+
+		/**
+		 * Iterate over all the records and capture only opened & currently labeled issues
+		 * Also fills the $dates & $slugs arrays with slugs and labeled dates
+		 */
+		foreach ( $intersected_meta as $repo_slug => $serialized ) {
 			// count only issues from specific repo.
 			if ( strpos( strtolower( $repo_slug ), strtolower( $repo_name ) ) === 0 ) {
 				$issue_number = explode( '#', $repo_slug )[1];
@@ -425,7 +439,7 @@ class GHActivity_Queries {
 	}
 
 	public static function fetch_average_label_time( $repo_name, $label, $range = null ) {
-		$slug = $repo_name . '#' . $label;
+		$slug = $repo_name . '#' . implode( ',', $label );
 		$args = array(
 			'post_type'      => 'gh_query_record',
 			'post_status'    => 'publish',

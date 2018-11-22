@@ -19,25 +19,25 @@ class GHActivity_Schedule {
 			)
 		);
 		foreach ( $label_slugs as $term ) {
-			$term_slug = explode( '#', $term->name );
-
-			$this->record_average_label_time( $term_slug[0], $term_slug[1] );
+			$term_name = explode( '#', $term->name );
+			$labels = explode( ',', $term_name[1] );
+			$this->record_average_label_time( $term_name[0], $labels );
 		}
 	}
 
-	public function record_average_label_time( $repo_name, $label ) {
-		$record          = GHActivity_Queries::current_average_label_time( $repo_name, $label );
+	public function record_average_label_time( $repo_name, $labels ) {
+		$record          = GHActivity_Queries::current_average_label_time( $repo_name, $labels );
 		$record_avg_time = $record[0];
 		$record_slugs    = $record[1];
 
 		$taxonomies = array(
 			'ghactivity_query_record_type' => 'average_label_time',
 			'ghactivity_repo'              => $repo_name,
-			'ghactivity_query_label_slug'  => $repo_name . '#' . $label,
+			'ghactivity_query_label_slug'  => $repo_name . '#' . implode( ',', $labels ),
 		);
 
 		$event_args = array(
-			'post_title'   => $repo_name . ' | ' . $label . ' | ' . date( DATE_RSS ),
+			'post_title'   => $repo_name . ' | ' . implode( ',', $labels ) . ' | ' . date( DATE_RSS ),
 			'post_type'    => 'gh_query_record',
 			'post_status'  => 'publish',
 			'tax_input'    => $taxonomies,
