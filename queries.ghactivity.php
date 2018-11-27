@@ -494,4 +494,42 @@ class GHActivity_Queries {
 
 		return $repos_to_monitor;
 	}
+
+	public static function fetch_project_stats( $org_name, $project_name, $range = null ) {
+		$slug = $org_name . '#' . $project_name;
+		$args = array(
+			'post_type'      => 'gh_query_record',
+			'post_status'    => 'publish',
+			'posts_per_page' => -1,
+			'orderby'        => 'date',
+			'order'          => 'ASC',
+			'tax_query'      => array(
+				array(
+					'taxonomy' => 'ghactivity_query_project_slug',
+					'field'    => 'name',
+					'terms'    => $slug,
+				),
+			),
+		);
+
+		if ( isset( $range ) ) {
+			$args['date_query'] = array(
+				'after'     => $range[0],
+				'before'    => $range[1],
+				'inclusive' => true,
+			);
+		}
+
+		// FIXME: Add caching
+		$posts = get_posts( $args );
+
+		function get_post_content( $post ) {
+			return array(
+				'post_content' => $post->post_content,
+				'post_date'    => strtotime( $post->post_date ),
+				'columns'      => json_decode( get_post_meta( $post->ID, 'recorded_columns', true ) ),
+			);
+		}
+		return array_map( 'get_post_content', $posts );
+	}
 }
