@@ -787,5 +787,42 @@ function ghactivity_register_query_records_post_type() {
 		'show_tagcloud'              => true,
 		'show_in_rest'               => true,
 	) );
+
+		/**
+	 * Register Query Record Label Slug
+	 *
+	 * @since 2.1.0
+	 */
+	register_taxonomy( 'ghactivity_query_project_slug', array( 'gh_query_record' ), array(
+		'labels'                     => array(
+			'name'                       => _x( 'Query Project Slug', 'Taxonomy General Name', 'ghactivity' ),
+			'singular_name'              => _x( 'Query Project Slugs', 'Taxonomy Singular Name', 'ghactivity' ),
+			'menu_name'                  => __( 'Query Project Slug', 'ghactivity' ),
+			'all_items'                  => __( 'All Query Project Slugs', 'ghactivity' ),
+			'parent_item'                => __( 'Parent Item', 'ghactivity' ),
+			'parent_item_colon'          => __( 'Parent Item:', 'ghactivity' ),
+			'new_item_name'              => __( 'New Query Project Slug Name', 'ghactivity' ),
+			'add_new_item'               => __( 'Add New Query Project Slug', 'ghactivity' ),
+			'edit_item'                  => __( 'Edit Query Project Slug', 'ghactivity' ),
+			'update_item'                => __( 'Update Query Project Slug', 'ghactivity' ),
+			'view_item'                  => __( 'View Query Project Slug', 'ghactivity' ),
+			'separate_items_with_commas' => __( 'Separate items with commas', 'ghactivity' ),
+			'add_or_remove_items'        => __( 'Add or remove items', 'ghactivity' ),
+			'choose_from_most_used'      => __( 'Choose from the most used', 'ghactivity' ),
+			'popular_items'              => __( 'Popular Items', 'ghactivity' ),
+			'search_items'               => __( 'Search Items', 'ghactivity' ),
+			'not_found'                  => __( 'Not Found', 'ghactivity' ),
+			'no_terms'                   => __( 'No items', 'ghactivity' ),
+			'items_list'                 => __( 'Items list', 'ghactivity' ),
+			'items_list_navigation'      => __( 'Items list navigation', 'ghactivity' ),
+		),
+		'hierarchical'               => false,
+		'public'                     => true,
+		'show_ui'                    => true,
+		'show_admin_column'          => true,
+		'show_in_nav_menus'          => true,
+		'show_tagcloud'              => true,
+		'show_in_rest'               => true,
+	) );
 }
 add_action( 'init', 'ghactivity_register_query_records_post_type', 0 );
