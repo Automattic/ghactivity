@@ -7,6 +7,7 @@ const webpackConfig = {
 	entry: {
 		'shortcodes/repo-activity': path.resolve(__dirname, 'shortcodes/js/repo-activity.js'),
 		'shortcodes/average-label-time': path.resolve(__dirname, 'shortcodes/js/average-label-time.js'),
+		'shortcodes/project-stats': path.resolve(__dirname, 'shortcodes/js/project-stats.js'),
 		// 'shortcodes/main-report': path.resolve(__dirname, 'shortcodes/js/main-report.js'),
 		// 'shortcodes/team-activity': path.resolve(__dirname, 'shortcodes/js/team-activity.js'),
 	},
