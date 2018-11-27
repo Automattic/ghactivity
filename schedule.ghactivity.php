@@ -75,52 +75,13 @@ class GHActivity_Schedule {
 	}
 
 	public function record_project_stats( $org_name, $project_name, $allowed_columns = null ) {
-		$options = get_option( 'ghactivity' );
-		$api = new GHActivity_GHApi( $options['access_token'] );
-
-		// Find project ID first.
-		$project_array = $api->get_projects( $org_name );
-		foreach ( $project_array as $proj ) {
-			if ( $project_name === $proj->name ) {
-				$project_id = $proj->id;
-				break;
-			}
-		}
-
-		$columns_array = $api->get_project_columns( $project_id );
-
-		$columns = array();
-		foreach ( $columns_array as $column ) {
-			if ( is_null( $allowed_columns ) || in_array( $column->name, $allowed_columns ) ) {
-				$cards_array = $api->get_project_column_cards( $column->id );
-				$columns[ $column->name ] = $cards_array;
-			}
-		}
-
-		$minified_columns = array();
-		foreach ( $columns as $column_name => $cards ) {
-			$minified_columns[ $column_name ] = array_map(
-				function( $card ) {
-					$result = array(
-						'creator'    => $card->creator->login,
-						'created_at' => $card->created_at,
-						'updated_at' => $card->updated_at,
-					);
-					if ( property_exists( $card, 'content_url' ) ) {
-						$html_url = str_replace( 'api.', '', str_replace( 'repos/', '', $card->content_url ) );
-						$result['content_url'] = $card->content_url;
-						$result['html_url']    = $html_url;
-					}
-					return $result;
-				},
-			$cards );
-		}
-
-		// To get last updated time - it is needed to fetch some more endpoints
+		$record      = GHActivity_Queries::current_project_stats( $org_name, $project_name, $allowed_columns );
+		$columns     = $record[0];
+		$project_url = $record[1];
 
 		$taxonomies = array(
-			'ghactivity_query_record_type'   => 'project_stats',
-			'ghactivity_query_project_slug'  => $org_name . '#' . $project_name,
+			'ghactivity_query_record_type'  => 'project_stats',
+			'ghactivity_query_project_slug' => $org_name . '#' . $project_name,
 		);
 
 		$event_args = array(
@@ -128,7 +89,10 @@ class GHActivity_Schedule {
 			'post_type'    => 'gh_query_record',
 			'post_status'  => 'publish',
 			'tax_input'    => $taxonomies,
-			'meta_input'   => array( 'recorded_columns' => wp_json_encode( $minified_columns ) ),
+			'meta_input'   => array(
+				'recorded_columns' => wp_json_encode( $columns ),
+				'project_url'      => $project_url,
+			),
 			'post_content' => 'Allowed columns: ' . wp_json_encode( $allowed_columns ),
 		);
 

@@ -44,6 +44,7 @@ class ProjectStats extends Component {
 		const labels = [];
 		const issues = [];
 		const cardsList = {};
+		let project_url = '';
 
 		records.forEach( ( record, id ) => {
 			labels.push( new Date( record.post_date * 1000 ).toDateString() );
@@ -60,6 +61,7 @@ class ProjectStats extends Component {
 
 				// Create list items for issues for latest record
 				if ( id === records.length - 1 ) {
+					project_url = record.project_url;
 					cards.forEach( ( card, idxx ) => {
 						if ( card.html_url ) {
 							const issueNumber = card.html_url.split('/issues/')[1];
@@ -86,11 +88,13 @@ class ProjectStats extends Component {
 		} );
 
 		const datasets = Object.entries( cardsList ).map( ( [ label, data ] ) => createDatasetObject( data, label ) );
-		return { issues, labels, datasets };
+		return { project_url, issues, labels, datasets };
 	}
 
 	render() {
 		const { records } = this.state;
+		const { org, project_name, api_url, api_nonce } = this.props;
+
 
 		if ( !records || records.length === 0 ) {
 			return (
@@ -100,7 +104,7 @@ class ProjectStats extends Component {
 			)
 		}
 
-		const { issues, labels, datasets } = this.createChartData()
+		const { project_url, issues, labels, datasets } = this.createChartData()
 
 		const chartArgs = {
 			labels,
@@ -111,6 +115,9 @@ class ProjectStats extends Component {
 			<div>
 				<Line data={ chartArgs } />
 				<br />
+				<p>
+					Project: <a href={ project_url }> { org + ' / ' + project_name }</a>
+				</p>
 				<p>List of open issues of specific project column</p>
 				<ul>
 					{issues}

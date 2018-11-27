@@ -512,14 +512,6 @@ class GHActivity_Queries {
 			),
 		);
 
-		if ( isset( $range ) ) {
-			$args['date_query'] = array(
-				'after'     => $range[0],
-				'before'    => $range[1],
-				'inclusive' => true,
-			);
-		}
-
 		// FIXME: Add caching
 		$posts = get_posts( $args );
 
@@ -528,8 +520,56 @@ class GHActivity_Queries {
 				'post_content' => $post->post_content,
 				'post_date'    => strtotime( $post->post_date ),
 				'columns'      => json_decode( get_post_meta( $post->ID, 'recorded_columns', true ) ),
+				'project_url'  => get_post_meta( $post->ID, 'project_url', true ),
 			);
 		}
 		return array_map( 'get_post_content', $posts );
+	}
+
+	public static function current_project_stats( $org_name, $project_name, $allowed_columns ) {
+		$columns          = array();
+		$minified_columns = array();
+		$options          = get_option( 'ghactivity' );
+
+		$api = new GHActivity_GHApi( $options['access_token'] );
+
+		// Find matching project first.
+		$project_array = $api->get_projects( $org_name );
+		foreach ( $project_array as $proj ) {
+			if ( $project_name === $proj->name ) {
+				$project = $proj;
+				break;
+			}
+		}
+
+		// Collect column cards from GH api endpoint.
+		$columns_array = $api->get_project_columns( $project->id );
+		foreach ( $columns_array as $column ) {
+			if ( is_null( $allowed_columns ) || in_array( $column->name, $allowed_columns ) ) {
+				$cards_array              = $api->get_project_column_cards( $column->id );
+				$columns[ $column->name ] = $cards_array;
+			}
+		}
+
+		// Collect only relevant card data (to save array size).
+		foreach ( $columns as $column_name => $cards ) {
+			$minified_columns[ $column_name ] = array_map(
+				function( $card ) {
+					$result = array(
+						'creator'    => $card->creator->login,
+						'created_at' => $card->created_at,
+						'updated_at' => $card->updated_at,
+					);
+					if ( property_exists( $card, 'content_url' ) ) {
+						$html_url = str_replace( 'api.', '', str_replace( 'repos/', '', $card->content_url ) );
+						$result['content_url'] = $card->content_url;
+						$result['html_url']    = $html_url;
+					}
+					return $result;
+				},
+			$cards );
+		}
+
+		return array( $minified_columns, $project->html_url );
 	}
 }

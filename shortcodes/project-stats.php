@@ -29,7 +29,7 @@ add_shortcode( 'ghactivity_project_stats', 'output_project_stats' );
  */
 function output_project_stats( $atts ) {
 	$atts = shortcode_atts(
-		array( 'org' => '', 'project_name' => '', columns => '' ),
+		array( 'org' => '', 'project_name' => '', 'columns' => '' ),
 		$atts,
 		'ghactivity_project_stats'
 	);
