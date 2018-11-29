@@ -299,14 +299,24 @@ class GHActivity_GHApi {
 		return $this->get_github_data( $query_url, $this->project_api_headers() );
 	}
 
+	/**
+	 * Sends multiple `get_github_data` requests to collect whole data array via paginating requests
+	 *
+	 * @since 2.1.0
+	 *
+	 * @param string $query_url GitHub API URL to hit.
+	 * @param array  $headers Additional headers.
+	 *
+	 * @return array $response_body Response body for each call.
+	 */
 	public function get_all_github_data( $query_url, $headers ) {
 		$page        = 1;
 		$all_results = array();
 		// Fetch API until empty array will be returned.
 		do {
-			$paged_query_url  = $query_url . '&page=' . $page;
-			$body             = $this->get_github_data( $paged_query_url, $headers );
-			$all_results      = array_merge( $all_results, $body );
+			$paged_query_url = $query_url . '&page=' . $page;
+			$body            = $this->get_github_data( $paged_query_url, $headers );
+			$all_results     = array_merge( $all_results, $body );
 			$page++;
 		} while ( ! empty( $body ) );
 		return $all_results;
