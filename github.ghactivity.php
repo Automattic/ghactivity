@@ -226,7 +226,7 @@ class GHActivity_GHApi {
 	 * @since 2.1.0
 	 *
 	 * @param string $repo_name   name of the repo.
-	 * @param int    $page_number page number of paginatated response.
+	 * @param int    $page_number page number of paginated response.
 	 *
 	 * @return array
 	 */
@@ -246,7 +246,7 @@ class GHActivity_GHApi {
 	 * @since 2.1.0
 	 *
 	 * @param string $org_name   name of the repo.
-	 * @param int    $page_number page number of paginatated response.
+	 * @param int    $page_number page number of paginated response.
 	 *
 	 * @return array
 	 */
@@ -267,7 +267,7 @@ class GHActivity_GHApi {
 	 * @since 2.1.0
 	 *
 	 * @param string $project_id   id comes from project object.
-	 * @param int    $page_number page number of paginatated response.
+	 * @param int    $page_number page number of paginated response.
 	 *
 	 * @return array
 	 */
@@ -289,7 +289,7 @@ class GHActivity_GHApi {
 	 * @since 2.1.0
 	 *
 	 * @param string $column_id   column id comes from column object.
-	 * @param int    $page_number page number of paginatated response.
+	 * @param int    $page_number page number of paginated response.
 	 *
 	 * @return array
 	 */
