@@ -517,16 +517,16 @@ class GHActivity_Queries {
 
 		function get_post_content( $post ) {
 			return array(
-				'post_content' => $post->post_content,
-				'post_date'    => strtotime( $post->post_date ),
+				'post_content' => esc_html( $post->post_content ),
+				'post_date'    => esc_html( strtotime( $post->post_date ) ),
 				'columns'      => json_decode( get_post_meta( $post->ID, 'recorded_columns', true ) ),
-				'project_url'  => get_post_meta( $post->ID, 'project_url', true ),
+				'project_url'  => esc_url( get_post_meta( $post->ID, 'project_url', true ) ),
 			);
 		}
 		return array_map( 'get_post_content', $posts );
 	}
 
-	public static function current_project_stats( $org_name, $project_name, $allowed_columns ) {
+	public static function current_project_stats( $org_name, $project_name ) {
 		$columns          = array();
 		$minified_columns = array();
 		$options          = get_option( 'ghactivity' );
@@ -545,10 +545,8 @@ class GHActivity_Queries {
 		// Collect column cards from GH api endpoint.
 		$columns_array = $api->get_project_columns( $project->id );
 		foreach ( $columns_array as $column ) {
-			if ( is_null( $allowed_columns ) || in_array( $column->name, $allowed_columns ) ) {
-				$cards_array              = $api->get_project_column_cards( $column->id );
-				$columns[ $column->name ] = $cards_array;
-			}
+			$cards_array              = $api->get_project_column_cards( $column->id );
+			$columns[ $column->name ] = $cards_array;
 		}
 
 		// Collect only relevant card data (to save array size).

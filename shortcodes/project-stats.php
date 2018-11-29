@@ -18,7 +18,7 @@
 
 defined( 'ABSPATH' ) || die( 'No script kiddies please!' );
 
-add_shortcode( 'ghactivity_project_stats', 'output_project_stats' );
+add_shortcode( 'ghactivity_project_stats', 'ghactivity_output_project_stats' );
 
 /**
  * Shortcode to display chart data of specific label
@@ -27,7 +27,7 @@ add_shortcode( 'ghactivity_project_stats', 'output_project_stats' );
  *
  * @param array $atts Array of shortcode attributes.
  */
-function output_project_stats( $atts ) {
+function ghactivity_output_project_stats( $atts ) {
 	$atts = shortcode_atts(
 		array( 'org' => '', 'project_name' => '', 'columns' => '' ),
 		$atts,
@@ -44,10 +44,10 @@ function output_project_stats( $atts ) {
 		GHACTIVITY__VERSION
 	);
 	$args = array(
-		'api_url'   => esc_url_raw( rest_url() ),
-		'site_url'  => esc_url_raw( home_url() ),
-		'api_nonce' => wp_create_nonce( 'wp_rest' ),
-		'org'       => esc_attr( $atts['org'] ),
+		'api_url'      => esc_url_raw( rest_url() ),
+		'site_url'     => esc_url_raw( home_url() ),
+		'api_nonce'    => wp_create_nonce( 'wp_rest' ),
+		'org'          => esc_attr( $atts['org'] ),
 		'project_name' => esc_attr( $atts['project_name'] ),
 		'columns'      => explode( ',', esc_attr( $atts['columns'] ) ),
 	);

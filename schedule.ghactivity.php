@@ -74,8 +74,8 @@ class GHActivity_Schedule {
 		}
 	}
 
-	public function record_project_stats( $org_name, $project_name, $allowed_columns = null ) {
-		$record      = GHActivity_Queries::current_project_stats( $org_name, $project_name, $allowed_columns );
+	public function record_project_stats( $org_name, $project_name ) {
+		$record      = GHActivity_Queries::current_project_stats( $org_name, $project_name );
 		$columns     = $record[0];
 		$project_url = $record[1];
 
@@ -85,15 +85,14 @@ class GHActivity_Schedule {
 		);
 
 		$event_args = array(
-			'post_title'   => $org_name . ' | ' . $project_name . ' | ' . date( DATE_RSS ),
-			'post_type'    => 'gh_query_record',
-			'post_status'  => 'publish',
-			'tax_input'    => $taxonomies,
-			'meta_input'   => array(
+			'post_title'  => $org_name . ' | ' . $project_name . ' | ' . date( DATE_RSS ),
+			'post_type'   => 'gh_query_record',
+			'post_status' => 'publish',
+			'tax_input'   => $taxonomies,
+			'meta_input'  => array(
 				'recorded_columns' => wp_json_encode( $columns ),
 				'project_url'      => $project_url,
 			),
-			'post_content' => 'Allowed columns: ' . wp_json_encode( $allowed_columns ),
 		);
 
 		$post_id = wp_insert_post( $event_args );
