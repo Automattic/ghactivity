@@ -251,14 +251,12 @@ class GHActivity_GHApi {
 	 * @return array
 	 */
 	public function get_projects( $org_name, $page_number = 1 ) {
-		$headers = array( 'accept' => 'application/vnd.github.inertia-preview+json' );
-
 		$query_url = sprintf(
 			'https://api.github.com/orgs/%1$s/projects?access_token=%2$s&per_page=100',
 			esc_html( $org_name ),
 			$this->token
 		);
-		return $this->get_all_github_data( $query_url, $headers );
+		return $this->get_all_github_data( $query_url, $this->project_api_headers() );
 	}
 
 	/**
@@ -272,15 +270,13 @@ class GHActivity_GHApi {
 	 * @return array
 	 */
 	public function get_project_columns( $project_id, $page_number = 1 ) {
-		$headers = array( 'accept' => 'application/vnd.github.inertia-preview+json' );
-
 		$query_url = sprintf(
 			'https://api.github.com/projects/%1$s/columns?access_token=%2$s&page=%3$s&per_page=100',
 			esc_html( $project_id ),
 			$this->token,
 			$page_number
 		);
-		return $this->get_github_data( $query_url, $headers );
+		return $this->get_github_data( $query_url, $this->project_api_headers() );
 	}
 
 	/**
@@ -294,15 +290,13 @@ class GHActivity_GHApi {
 	 * @return array
 	 */
 	public function get_project_column_cards( $column_id, $page_number = 1 ) {
-		$headers = array( 'accept' => 'application/vnd.github.inertia-preview+json' );
-
 		$query_url = sprintf(
 			'https://api.github.com/projects/columns/%1$s/cards?access_token=%2$s&page=%3$s&per_page=100',
 			esc_html( $column_id ),
 			$this->token,
 			$page_number
 		);
-		return $this->get_github_data( $query_url, $headers );
+		return $this->get_github_data( $query_url, $this->project_api_headers() );
 	}
 
 	public function get_all_github_data( $query_url, $headers ) {
@@ -366,5 +360,15 @@ class GHActivity_GHApi {
 		);
 
 		return $this->get_github_data( $query_url );
+	}
+
+	/**
+	 * The Projects API is currently available for developers to preview.
+	 * To access the API during the preview period, you must provide a custom media type in the Accept header.
+	 *
+	 * Details: https://developer.github.com/v3/projects/#list-repository-projects
+	 */
+	private function project_api_headers() {
+		return array( 'accept' => 'application/vnd.github.inertia-preview+json' );
 	}
 }
