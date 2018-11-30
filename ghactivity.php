@@ -60,6 +60,7 @@ class Jeherve_GHActivity {
 		require_once( GHACTIVITY__PLUGIN_DIR . 'shortcodes/repo-activity.php' );
 		require_once( GHACTIVITY__PLUGIN_DIR . 'shortcodes/team-activity.php' );
 		require_once( GHACTIVITY__PLUGIN_DIR . 'shortcodes/average-label-time.php' );
+		require_once( GHACTIVITY__PLUGIN_DIR . 'shortcodes/project-stats.php' );
 	}
 
 	public function flush_rules_on_enable() {

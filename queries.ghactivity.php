@@ -494,4 +494,80 @@ class GHActivity_Queries {
 
 		return $repos_to_monitor;
 	}
+
+	public static function fetch_project_stats( $org_name, $project_name, $range = null ) {
+		$slug = $org_name . '#' . $project_name;
+		$args = array(
+			'post_type'      => 'gh_query_record',
+			'post_status'    => 'publish',
+			'posts_per_page' => -1,
+			'orderby'        => 'date',
+			'order'          => 'ASC',
+			'tax_query'      => array(
+				array(
+					'taxonomy' => 'ghactivity_query_project_slug',
+					'field'    => 'name',
+					'terms'    => $slug,
+				),
+			),
+		);
+
+		// FIXME: Add caching
+		$posts = get_posts( $args );
+
+		function get_post_content( $post ) {
+			return array(
+				'post_content' => esc_html( $post->post_content ),
+				'post_date'    => esc_html( strtotime( $post->post_date ) ),
+				'columns'      => json_decode( get_post_meta( $post->ID, 'recorded_columns', true ) ),
+				'project_url'  => esc_url( get_post_meta( $post->ID, 'project_url', true ) ),
+			);
+		}
+		return array_map( 'get_post_content', $posts );
+	}
+
+	public static function current_project_stats( $org_name, $project_name ) {
+		$columns          = array();
+		$minified_columns = array();
+		$options          = get_option( 'ghactivity' );
+
+		$api = new GHActivity_GHApi( $options['access_token'] );
+
+		// Find matching project first.
+		$project_array = $api->get_projects( $org_name );
+		foreach ( $project_array as $proj ) {
+			if ( $project_name === $proj->name ) {
+				$project = $proj;
+				break;
+			}
+		}
+
+		// Collect column cards from GH api endpoint.
+		$columns_array = $api->get_project_columns( $project->id );
+		foreach ( $columns_array as $column ) {
+			$cards_array              = $api->get_project_column_cards( $column->id );
+			$columns[ $column->name ] = $cards_array;
+		}
+
+		// Collect only relevant card data (to save array size).
+		foreach ( $columns as $column_name => $cards ) {
+			$minified_columns[ $column_name ] = array_map(
+				function( $card ) {
+					$result = array(
+						'creator'    => $card->creator->login,
+						'created_at' => $card->created_at,
+						'updated_at' => $card->updated_at,
+					);
+					if ( property_exists( $card, 'content_url' ) ) {
+						$html_url = str_replace( 'api.', '', str_replace( 'repos/', '', $card->content_url ) );
+						$result['content_url'] = $card->content_url;
+						$result['html_url']    = $html_url;
+					}
+					return $result;
+				},
+			$cards );
+		}
+
+		return array( $minified_columns, $project->html_url );
+	}
 }
