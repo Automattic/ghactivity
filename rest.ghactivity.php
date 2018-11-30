@@ -89,6 +89,23 @@ class Ghactivity_Api {
 			'callback'            => array( $this, 'redo_graphs' ),
 			'permission_callback' => array( $this, 'permissions_check' ),
 		) );
+
+		/**
+		 * Get project stats for specific Org project.
+		 *
+		 * @since 2.1.0
+		 */
+		register_rest_route( 'ghactivity/v1', '/queries/project-stats/org/(?P<org>[0-9a-z\-_\/]+)', array(
+			'methods'             => WP_REST_Server::READABLE,
+			'callback'            => array( $this, 'get_project_stats' ),
+			'permission_callback' => array( $this, 'permissions_check' ),
+			'args'                => array(
+				'org' => array(
+					'required'          => true,
+					'validate_callback' => array( $this, 'validate_string' ),
+				),
+			),
+		) );
 	}
 
 	/**
@@ -371,6 +388,40 @@ class Ghactivity_Api {
 			esc_html__( 'The graphs are now being rebuilt. Give it a bit of time.', 'ghactivity' ),
 			200
 		);
+	}
+
+	/**
+	 * Get an project stats for specified org/project_name
+	 *
+	 * @since 2.1.0
+	 *
+	 * @param WP_REST_Request $request Full details about the request.
+	 *
+	 * @return WP_REST_Response $response Stats for a specific repo.
+	 */
+	public function get_project_stats( $request ) {
+		if ( isset( $request['org'] ) && isset( $request->get_query_params()['project_name'] ) ) {
+			$org  = esc_html( $request['org'] );
+			$project_name = esc_html( $request->get_query_params()['project_name'] );
+		} else {
+			return new WP_Error(
+				'not_found',
+				esc_html__( 'You did not specify a valid GitHub org and/or project_name', 'ghactivity' ),
+				array(
+					'status' => 404,
+				)
+			);
+		}
+
+		// [average_time, date_of_record, recorded_issues]
+		$records = GHActivity_Queries::fetch_project_stats( $org, $project_name );
+
+		$response = array(
+			'org'          => $org,
+			'project_name' => $project_name,
+			'records'      => $records,
+		);
+		return new WP_REST_Response( $response, 200 );
 	}
 } // End class.
 new Ghactivity_Api();

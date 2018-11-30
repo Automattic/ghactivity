@@ -226,7 +226,7 @@ class GHActivity_GHApi {
 	 * @since 2.1.0
 	 *
 	 * @param string $repo_name   name of the repo.
-	 * @param int    $page_number page number of paginatated response.
+	 * @param int    $page_number page number of paginated response.
 	 *
 	 * @return array
 	 */
@@ -241,6 +241,88 @@ class GHActivity_GHApi {
 	}
 
 	/**
+	 * Remote call to get all org projects
+	 *
+	 * @since 2.1.0
+	 *
+	 * @param string $org_name   name of the repo.
+	 * @param int    $page_number page number of paginated response.
+	 *
+	 * @return array
+	 */
+	public function get_projects( $org_name, $page_number = 1 ) {
+		$query_url = sprintf(
+			'https://api.github.com/orgs/%1$s/projects?access_token=%2$s&per_page=100',
+			esc_html( $org_name ),
+			$this->token
+		);
+		return $this->get_all_github_data( $query_url, $this->project_api_headers() );
+	}
+
+	/**
+	 * Remote call to get project columns
+	 *
+	 * @since 2.1.0
+	 *
+	 * @param string $project_id   id comes from project object.
+	 * @param int    $page_number page number of paginated response.
+	 *
+	 * @return array
+	 */
+	public function get_project_columns( $project_id, $page_number = 1 ) {
+		$query_url = sprintf(
+			'https://api.github.com/projects/%1$s/columns?access_token=%2$s&page=%3$s&per_page=100',
+			esc_html( $project_id ),
+			$this->token,
+			$page_number
+		);
+		return $this->get_github_data( $query_url, $this->project_api_headers() );
+	}
+
+	/**
+	 * Remote call to get project column cards
+	 *
+	 * @since 2.1.0
+	 *
+	 * @param string $column_id   column id comes from column object.
+	 * @param int    $page_number page number of paginated response.
+	 *
+	 * @return array
+	 */
+	public function get_project_column_cards( $column_id, $page_number = 1 ) {
+		$query_url = sprintf(
+			'https://api.github.com/projects/columns/%1$s/cards?access_token=%2$s&page=%3$s&per_page=100',
+			esc_html( $column_id ),
+			$this->token,
+			$page_number
+		);
+		return $this->get_github_data( $query_url, $this->project_api_headers() );
+	}
+
+	/**
+	 * Sends multiple `get_github_data` requests to collect whole data array via paginating requests
+	 *
+	 * @since 2.1.0
+	 *
+	 * @param string $query_url GitHub API URL to hit.
+	 * @param array  $headers Additional headers.
+	 *
+	 * @return array $response_body Response body for each call.
+	 */
+	public function get_all_github_data( $query_url, $headers ) {
+		$page        = 1;
+		$all_results = array();
+		// Fetch API until empty array will be returned.
+		do {
+			$paged_query_url = $query_url . '&page=' . $page;
+			$body            = $this->get_github_data( $paged_query_url, $headers );
+			$all_results     = array_merge( $all_results, $body );
+			$page++;
+		} while ( ! empty( $body ) );
+		return $all_results;
+	}
+
+	/**
 	 * Remote call utility function for GitHub.
 	 *
 	 * @since 2.0.0
@@ -249,10 +331,10 @@ class GHActivity_GHApi {
 	 *
 	 * @return array $response_body Response body for each call.
 	 */
-	private function get_github_data( $query_url ) {
+	private function get_github_data( $query_url, $headers = array() ) {
 		$response_body = array();
 
-		$data = wp_remote_get( esc_url_raw( $query_url ) );
+		$data = wp_remote_get( esc_url_raw( $query_url ), array( 'headers' => $headers ) );
 
 		if (
 			is_wp_error( $data )
@@ -288,5 +370,15 @@ class GHActivity_GHApi {
 		);
 
 		return $this->get_github_data( $query_url );
+	}
+
+	/**
+	 * The Projects API is currently available for developers to preview.
+	 * To access the API during the preview period, you must provide a custom media type in the Accept header.
+	 *
+	 * Details: https://developer.github.com/v3/projects/#list-repository-projects
+	 */
+	private function project_api_headers() {
+		return array( 'accept' => 'application/vnd.github.inertia-preview+json' );
 	}
 }
