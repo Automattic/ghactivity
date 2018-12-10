@@ -599,6 +599,9 @@ class GHActivity_Calls {
 				$post_id      = $options['post_id'];
 			} else {
 				preg_match( '/(?<=repos\/)(.*?)(?=\/issues)/', $event->url, $match );
+				if ( ! isset(  $event->issue->number ) ) {
+				    continue;
+				}
 				$issue_number = $event->issue->number;
 				$repo_name    = $match[0];
 				$post_id      = GHActivity_Queries::find_gh_issue( $repo_name, $issue_number );

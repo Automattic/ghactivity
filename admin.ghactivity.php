@@ -413,10 +413,14 @@ function label_scan_action() {
 	foreach ( $post_ids_chunks as $post_ids_chunk ) {
 		foreach ( $post_ids_chunk as $post_id ) {
 			$issue_number = get_post_meta( $post_id, 'number', true );
-			$repo_name    = get_terms( array(
+			$terms = get_terms( array(
 				'object_ids' => $post_id,
 				'taxonomy'   => 'ghactivity_repo',
-			) )[0]->name;
+			) );
+			if ( empty( $terms ) ) {
+				continue;
+			}
+			$repo_name = $terms[0]->name;
 			$response     = $gha->api->get_github_issue_events( $repo_name, $issue_number );
 			$options      = array(
 				'issue_number' => $issue_number,
