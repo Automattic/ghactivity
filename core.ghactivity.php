@@ -467,7 +467,7 @@ class GHActivity_Calls {
 	 */
 	private function record_issue_details( $issue_details ) {
 		$post_id = GHActivity_Queries::find_gh_issue( $issue_details['repo_name'], $issue_details['number'] );
-		l( $issue_details['repo_name'] . ' :: ' . $issue_details['number'] . ' :: ' . $post_id );
+		error_log( $issue_details['repo_name'] . ' :: ' . $issue_details['number'] . ' :: ' . $post_id );
 
 		$meta = array(
 			'number'   => absint( $issue_details['number'] ),
@@ -669,7 +669,12 @@ class GHActivity_Calls {
 	 * @return bool $done Returns true when done.
 	 */
 	public function full_issue_sync( $repo_slug ) {
-		l( 'FULL ISSUE SYNC STARTED FOR' . $repo_slug );
+		error_log( 'FULL ISSUE SYNC STARTED FOR' . $repo_slug );
+
+		// TODO: remove this function after first successfull sync.
+		// Remove all duplicates first.
+		GHActivity_Queries::remove_duplicate_issues();
+
 		/**
 		 * First, let's get info about the sync.
 		 *
@@ -712,7 +717,7 @@ class GHActivity_Calls {
 		// Go through all opened issues in GitHub and eventually create/update relevant CPT.
 		do {
 			$issues_body = $this->api->get_github_issues( $repo->name, $status['pages'] );
-			l( 'GOING through page: ' . $status['pages'] . '. Count: ' . count( $issues_body ) );
+			error_log( 'GOING through page: ' . $status['pages'] . '. Count: ' . count( $issues_body ) );
 
 			/**
 			 * Only go through the event list if we have valid event array.
@@ -744,7 +749,7 @@ class GHActivity_Calls {
 			'pages'  => 0,
 		);
 		$this->update_option( $repo_slug . '_full_sync', $status );
-		l( 'DONE!!!' );
+		error_log( 'DONE!!!' );
 		return true;
 	}
 
@@ -760,8 +765,8 @@ class GHActivity_Calls {
 		if ( empty( $terms ) ) {
 			return;
 		}
-		$issue_number = get_post_meta( $post_id, 'number', true );
 		$repo_name    = $terms[0]->name;
+		$issue_number = get_post_meta( $post_id, 'number', true );
 		$response     = $this->api->get_github_issue_events( $repo_name, $issue_number );
 		$options      = array(
 			'issue_number' => $issue_number,

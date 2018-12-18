@@ -761,4 +761,36 @@ class GHActivity_Queries {
 			),
 		);
 	}
+
+	/**
+	 * TODO: Remove it after first successful sync.
+	 * Temporary function to remove all duplicate GHActivity issues created recently.
+	 */
+	public static function remove_duplicate_issues() {
+		$status = get_option( 'ghactivity_removed_duplicate_issues' );
+
+		if ( ! empty( $status ) && 'done' === $status ) {
+			error_log( 'Skipping. Duplicates already removed' );
+			return true;
+		}
+
+		$repos = self::get_monitored_repos();
+
+		foreach ( $repos as $term_id => $name ) {
+			$parsed_issues = [];
+			$post_ids = self::get_all_open_gh_issues( $name );
+			foreach ( $post_ids as $post_id ) {
+				$issue_number = get_post_meta( $post_id, 'number', true );
+				if ( ! in_array( $issue_number, $parsed_issues ) ) {
+					error_log( 'Adding: ' . $name . ' :: ' . $issue_number . ' :: ' . $post_id );
+					$parsed_issues[] = $issue_number;
+				} else {
+					error_log( 'Deleting: ' . $name . ' :: ' . $issue_number . ' :: ' . $post_id );
+					wp_delete_post( $post_id, true );
+				}
+			}
+		}
+
+		update_option( 'ghactivity_removed_duplicate_issues', 'done' );
+	}
 }
