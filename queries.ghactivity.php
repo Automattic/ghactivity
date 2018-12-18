@@ -343,48 +343,11 @@ class GHActivity_Queries {
 		return array( (int) array_sum( $filtered_labels[1] ) / count( $filtered_labels[1] ), $filtered_labels[0] );
 	}
 
-	public static function find_open_gh_issue( $repo_name, $issue_number ) {
-		$post_id      = null;
-		$is_open_args = array(
-			'post_type'      => 'ghactivity_issue',
-			'post_status'    => 'publish',
-			'fields'          => 'ids', // Only get post IDs
-			'posts_per_page' => 1,
-			'tax_query'      => array(
-				'relation' => 'AND',
-				array(
-					'taxonomy' => 'ghactivity_issues_state',
-					'field'    => 'name',
-					'terms'    => 'open',
-				),
-				array(
-					'taxonomy' => 'ghactivity_repo',
-					'field'    => 'name',
-					'terms'    => $repo_name,
-				),
-			),
-			'meta_query' => array(
-				array(
-					'key'     => 'number',
-					'value'   => $issue_number,
-					'compare' => '=',
-				),
-			),
-		);
-		$posts = get_posts( $is_open_args );
-		if ( $posts ) {
-			$post_id = $posts[0];
-		}
-		wp_reset_postdata();
-
-		return $post_id;
-	}
-
 	public static function get_all_open_gh_issues( $repo_name ) {
 		$is_open_args = array(
 			'post_type'      => 'ghactivity_issue',
 			'post_status'    => 'publish',
-			// 'fields'          => 'ids', // Only get post IDs
+			'fields'          => 'ids', // Only get post IDs
 			'posts_per_page' => -1,
 			'tax_query'      => array(
 				'relation' => 'AND',
@@ -400,8 +363,13 @@ class GHActivity_Queries {
 				),
 			),
 		);
-		$posts_ids = get_posts( $is_open_args );
-		wp_reset_postdata();
+
+		$posts_ids = wp_cache_get( 'all_open_gh_issues_' . $repo_name );
+		if ( false === $posts_ids ) {
+			$posts_ids = get_posts( $is_open_args );
+			wp_reset_postdata();
+			wp_cache_set( 'all_open_gh_issues_' . $repo_name, $posts_ids, '', 30 * 60 /** 30 min */ );
+		}
 		return $posts_ids;
 	}
 
@@ -414,11 +382,12 @@ class GHActivity_Queries {
 	 *
 	 * @return int $post_id ID of the post. Null if not found.
 	 */
-	public static function find_gh_issue( $repo_name, $issue_number ) {
-		$post_id     = null;
-		$is_new_args = array(
+	public static function find_gh_issue( $repo_name, $issue_number, $fields = 'ids'  ) {
+		wp_suspend_cache_addition( true );
+		$args = array(
 			'post_type'      => 'ghactivity_issue',
 			'post_status'    => 'publish',
+			'fields'         => $fields,
 			'posts_per_page' => 1,
 			'tax_query'      => array(
 				array(
@@ -427,7 +396,7 @@ class GHActivity_Queries {
 					'terms'    => $repo_name,
 				),
 			),
-			'meta_query' => array(
+			'meta_query'     => array(
 				array(
 					'key'     => 'number',
 					'value'   => $issue_number,
@@ -435,14 +404,13 @@ class GHActivity_Queries {
 				),
 			),
 		);
-		$query = new WP_Query( $is_new_args );
-		if ( $query->have_posts() ) {
-			$query->the_post();
-			$post_id = $query->post->ID;
-		}
+		$result = get_posts( $args );
 		wp_reset_postdata();
+		if ( ! empty( $result ) ) {
+			return $result[0];
+		}
 
-		return $post_id;
+		return null;
 	}
 
 	public static function fetch_average_label_time( $id, $range = null ) {
@@ -510,7 +478,12 @@ class GHActivity_Queries {
 				),
 			),
 		);
-		$repos_to_monitor = get_terms( $repos_query_args );
+		$repos_to_monitor = wp_cache_get( 'gh_monitored_repos_' . $fields );
+		if ( false === $repos_to_monitor ) {
+			$repos_to_monitor = get_terms( $repos_query_args );
+			wp_reset_postdata();
+			wp_cache_set( 'gh_monitored_repos' . $fields, $repos_to_monitor, '', 24 * 60 * 60 /** 24 hours */ );
+		}
 
 		return $repos_to_monitor;
 	}
@@ -642,19 +615,19 @@ class GHActivity_Queries {
 	 * @return array
 	 */
 	public static function filter_labeled_labels( $meta, $repo_name ) {
-		$dates = array();
-		$slugs = array();
-		$posts = self::get_all_open_gh_issues( $repo_name );
-		$post_id = null;
+		$dates    = array();
+		$slugs    = array();
+		$post_ids = self::get_all_open_gh_issues( $repo_name );
+		$post_id  = null;
 		foreach ( $meta as $repo_slug => $serialized ) {
 			// count only issues from specific repo.
 			if ( strpos( strtolower( $repo_slug ), strtolower( $repo_name ) ) === 0 ) {
 				$issue_number = explode( '#', $repo_slug )[1];
-				// $post_id      = self::find_open_gh_issue( $repo_name, $issue_number );
 				$label_ary    = unserialize( $serialized[0] );
-				foreach ( $posts as $post ) {
-					if ( get_post_meta( $post->ID, 'number', 1 ) === $issue_number ) {
-						$post_id = $post->ID;
+				foreach ( $post_ids as $id ) {
+					set_time_limit( 300 );
+					if ( get_post_meta( $id, 'number', 1 ) === $issue_number ) {
+						$post_id = $id;
 					}
 				}
 
@@ -688,18 +661,25 @@ class GHActivity_Queries {
 		$repo_term              = get_terms( $query )[0];
 		$repo_labels            = get_term_meta( $repo_term->term_id, 'repo_labels', 1 );
 		$repo_open_issues_count = get_term_meta( $repo_term->term_id, 'open_issues_count', 1 );
-		$label_terms            = get_terms(
+
+		if ( empty( $repo_labels ) || empty( $repo_open_issues_count ) ) {
+			throw new WP_Error( 'current_repo_labels_state', '`gh_query_update_repo_meta` was never run for ' > $repo_name );
+		}
+
+		$label_terms = get_terms(
 			array(
 				'taxonomy' => 'ghactivity_issues_labels',
 				'fields'   => 'id=>name',
 			)
 		);
-
+		$repo_labels = array_map( function( $label ) {
+			return strtolower( $label );
+		}, $repo_labels );
 		// Filters out label_terms which is part of the repo.
-		// We might want to strtolower during comparison, to mage sure we not miss some of the labels.
+		// We might want to strtolower during comparison, to make sure we not miss some of the labels.
 		$repo_label_terms = array();
 		foreach ( $label_terms as $id => $name ) {
-			if ( in_array( $name, $repo_labels ) ) {
+			if ( in_array( strtolower( $name ), $repo_labels ) ) {
 				$repo_label_terms[ $id ] = $name;
 			}
 		}
@@ -756,6 +736,10 @@ class GHActivity_Queries {
 		$prev_week       = time() - ( 7 * 24 * 60 * 60 ); // 7 days
 
 		$second_post = array_pop( $posts );
+		if ( null === $first_post || null === $second_post ) {
+			return array();
+		}
+
 		foreach ( $posts as $post ) {
 			$post_is_week_old = $first_post_date - strtotime( $post->post_date ) > $prev_week;
 			if ( $post_is_week_old ) {
