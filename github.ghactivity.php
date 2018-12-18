@@ -231,12 +231,13 @@ class GHActivity_GHApi {
 	 *
 	 * @return array
 	 */
-	public function get_github_issues( $repo_name, $page_number = 1 ) {
+	public function get_github_issues( $repo_name, $page_number = 1, $issues_state = 'open' ) {
 		$query_url = sprintf(
-			'https://api.github.com/repos/%1$s/issues?access_token=%2$s&page=%3$s&per_page=100',
+			'https://api.github.com/repos/%1$s/issues?access_token=%2$s&page=%3$s&per_page=100&state=%4$s',
 			esc_html( $repo_name ),
 			$this->token,
-			$page_number
+			$page_number,
+			$issues_state
 		);
 		return $this->get_github_data( $query_url );
 	}

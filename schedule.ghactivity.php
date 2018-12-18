@@ -64,9 +64,7 @@ class GHActivity_Schedule {
 		$post_id = wp_insert_post( $event_args );
 
 		foreach ( $taxonomies as $taxonomy => $value ) {
-			$term_taxonomy_ids = wp_set_object_terms( $post_id, $value, $taxonomy, true );
-			// we can set Repo and label as term meta
-			// update_term_meta( $term_taxonomy_id[0], 'issue_slugs', $record_slugs );
+			wp_set_object_terms( $post_id, $value, $taxonomy, true );
 		}
 	}
 
@@ -124,7 +122,8 @@ class GHActivity_Schedule {
 			update_term_meta( $term_id, 'repo_labels', $labels );
 
 			$open_issues_count = $api->get_repo_open_issues_count( $name );
-			update_term_meta( $term_id, 'open_issues_count', $open_issues_count );		}
+			update_term_meta( $term_id, 'open_issues_count', $open_issues_count );
+		}
 	}
 
 	/**
