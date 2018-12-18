@@ -108,13 +108,6 @@ function ghactivity_options_init() {
 		'ghactivity'
 	);
 	add_settings_field(
-		'ghactivity_label_scan',
-		__( 'Initialize GitHub labels scan', 'ghactivity' ),
-		'ghactivity_label_scan_callback',
-		'ghactivity',
-		'ghactivity_restart_triggers'
-	);
-	add_settings_field(
 		'ghactivity_redo_graphs',
 		__( 'Re-build Graphs', 'ghactivity' ),
 		'ghactivity_redo_graphs_callback',
@@ -261,35 +254,41 @@ function ghactivity_sync_settings_full_sync_callback() {
 		},
 	$repos_to_monitor );
 
+	if ( empty( $repos_to_monitor ) ) {
+		return esc_html_e( 'You currently do not monitor activity on any repository. You cannot use this option yet.', 'ghactivity' );
+	}
+
 	// Gather info about our watched repos, and the current sync status.
-	if ( ! empty( $repos_to_monitor ) ) {
-		foreach ( $repos_to_monitor as $repo ) {
-			$sync_status = isset( $options[ $repo . '_full_sync' ] ) ? $options[ $repo . '_full_sync' ] : '';
-			if ( ! empty( $sync_status ) ) {
-				if ( 'done' === $sync_status['status'] ) {
-					printf(
-						__( 'All events for the %1$s repository have already been synchronized. Check them <a href="%2$s">here</a>.', 'ghactivity' ),
-						esc_html( $repo ),
-						esc_url( get_admin_url( null, 'edit.php?post_type=ghactivity_issue' ) )
-					);
-				} else {
-					printf(
-						__( 'Synchronization for the %1$s repository in progress. There are still %2$d pages to process.', 'ghactivity' ),
-						esc_html( $repo ),
-						absint( $sync_status['pages'] )
-					);
-				}
-			} else {
-				// we push to start the sync here.
+	foreach ( $repos_to_monitor as $repo ) {
+		$sync_status = isset( $options[ $repo . '_full_sync' ] ) ? $options[ $repo . '_full_sync' ] : '';
+		printf( '<div><strong>%1$s</strong>: ', esc_attr( $repo ) );
+		if ( ! empty( $sync_status ) ) {
+			if ( 'done' === $sync_status['status'] ) {
 				printf(
-					'<div><strong>%1$s</strong>: <input class="full_sync" id="%1$s_full_sync" type="button" name="%1$s_full_sync" value="%2$s" class="button button-secondary" /><p id="%1$s_full_sync_details" style="display:none;"></p></div>',
-					esc_attr( $repo ),
-					esc_html__( 'Start synchronizing all issues', 'ghactivity' )
+					__( 'All events for the %1$s repository have already been synchronized. Check them <a href="%2$s">here</a>.', 'ghactivity' ),
+					esc_html( $repo ),
+					esc_url( get_admin_url( null, 'edit.php?post_type=ghactivity_issue&ghactivity_repo=' . $repo ) )
+				);
+			} else {
+				printf(
+					__( 'Synchronization for the %1$s repository in progress. There are still %2$d pages to process.', 'ghactivity' ),
+					esc_html( $repo ),
+					absint( $sync_status['pages'] )
 				);
 			}
+			printf(
+				'<input class="reset_sync_status" id="%1$s_reset_sync_status" type="button" value="Reset sync status" class="button button-secondary" />',
+				esc_attr( $repo )
+			);
+		} else {
+			// we push to start the sync here.
+			printf(
+				'<input class="full_sync" id="%1$s_full_sync" type="button" name="%1$s_full_sync" value="%2$s" class="button button-secondary" /><p id="%1$s_full_sync_details" style="display:none;"></p>',
+				esc_attr( $repo ),
+				esc_html__( 'Start synchronizing all issues', 'ghactivity' )
+			);
 		}
-	} else {
-		esc_html_e( 'You currently do not monitor activity on any repository. You cannot use this option yet.', 'ghactivity' );
+		printf( '</div>' );
 	}
 }
 
@@ -481,7 +480,6 @@ function label_scan_action() {
 
 /**
  * Add a button to re-build our graphs.
- *
  */
 function ghactivity_redo_graphs_callback() {
 	printf(
