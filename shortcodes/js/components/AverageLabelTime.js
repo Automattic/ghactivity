@@ -41,6 +41,7 @@ class AverageLabelTime extends Component {
 
 	render() {
 		const { records } = this.state;
+		const { numOnly } = this.props;
 		const labels = [];
 		const avgTimeData = [];
 		const issuesNumData = [];
@@ -71,6 +72,20 @@ class AverageLabelTime extends Component {
 			labels.push( new Date( recordDate * 1000 ).toDateString() );
 			issuesNumData.push( Object.values( recordedIssues ).length );
 		} );
+
+		// Will not display a chart.
+		if ( numOnly ) {
+			const currentAvgTimeIndex = avgTimeData.length -1,
+				currentAvgTime = avgTimeData[ currentAvgTimeIndex ];
+
+			return(
+				<div className="average-time-number-only">
+					<h2>{currentAvgTime} Days.</h2>
+					{issues}
+				</div>
+			);
+		}
+
 		const chartArgs = {
 			labels,
 			datasets: [
