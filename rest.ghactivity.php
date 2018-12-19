@@ -347,14 +347,14 @@ class Ghactivity_Api {
 	 * @return WP_REST_Response $response Stats for a specific repo.
 	 */
 	public function get_average_label_time( $request ) {
-		if ( isset( $request['repo'] ) && isset( $request->get_query_params()['label'] ) ) {
+		if ( ! empty( $request['id'] ) || ( ! empty( $request['repo'] ) && ! empty( $request->get_query_params()['label'] ) ) ) {
 			$repo  = esc_html( $request['repo'] );
 			$label = explode( ',', esc_html( $request->get_query_params()['label'] ) );
 			$id    = esc_html( $request->get_query_params()['id'] );
 		} else {
 			return new WP_Error(
 				'not_found',
-				esc_html__( 'You did not specify a valid GitHub repo and/or issue label', 'ghactivity' ),
+				esc_html__( 'You did not specify a valid GitHub repo and/or issue label and/or ID', 'ghactivity' ),
 				array(
 					'status' => 404,
 				)
