@@ -438,8 +438,8 @@ class GHActivity_Queries {
 		return $post_id;
 	}
 
-	public static function fetch_average_label_time( $repo_name, $label, $range = null ) {
-		$slug = $repo_name . '#' . implode( ',', $label );
+	public static function fetch_average_label_time( $repo_name, $label, $id, $range = null ) {
+		$term = ! empty( $id ) ? $id : $repo_name . '#' . implode( ',', $label );
 		$args = array(
 			'post_type'      => 'gh_query_record',
 			'post_status'    => 'publish',
@@ -449,8 +449,8 @@ class GHActivity_Queries {
 			'tax_query'      => array(
 				array(
 					'taxonomy' => 'ghactivity_query_label_slug',
-					'field'    => 'name',
-					'terms'    => $slug,
+					'field'    => ! empty( $id ) ? 'id' : 'name',
+					'terms'    => $term,
 				),
 			),
 		);

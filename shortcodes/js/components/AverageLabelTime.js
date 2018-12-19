@@ -18,10 +18,10 @@ class AverageLabelTime extends Component {
 	}
 
 	fetchActivity() {
-		const { repo, label } = this.props;
+		const { repo, label, id } = this.props;
 		const { api_url, api_nonce } = ghactivity_avg_label_time;
 		return fetch(
-			`${ api_url }ghactivity/v1/queries/average-label-time/repo/${ repo }/?label=${ encodeURI( label ) }`,
+			`${ api_url }ghactivity/v1/queries/average-label-time/repo/${ repo }/?label=${ encodeURI( label ) }&id=${ encodeURI( id ) }`,
 			{
 				credentials: 'same-origin',
 				headers: {

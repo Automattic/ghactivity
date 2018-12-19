@@ -350,6 +350,7 @@ class Ghactivity_Api {
 		if ( isset( $request['repo'] ) && isset( $request->get_query_params()['label'] ) ) {
 			$repo  = esc_html( $request['repo'] );
 			$label = explode( ',', esc_html( $request->get_query_params()['label'] ) );
+			$id    = esc_html( $request->get_query_params()['id'] );
 		} else {
 			return new WP_Error(
 				'not_found',
@@ -361,11 +362,12 @@ class Ghactivity_Api {
 		}
 
 		// [average_time, date_of_record, recorded_issues]
-		$records = GHActivity_Queries::fetch_average_label_time( $repo, $label );
+		$records = GHActivity_Queries::fetch_average_label_time( $repo, $label, $id, null );
 
 		$response = array(
 			'repo'    => $repo,
 			'label'   => $label,
+			'id'      => $id,
 			'records' => $records,
 		);
 		return new WP_REST_Response( $response, 200 );

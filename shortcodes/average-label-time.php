@@ -25,6 +25,7 @@ function output_average_label_time( $atts ) {
 	$atts = shortcode_atts( array(
 		'repo'  => '',
 		'label' => '',
+		'id'    => '',
 	), $atts, 'ghactivity_average_label_time' );
 
 	/**
@@ -42,6 +43,7 @@ function output_average_label_time( $atts ) {
 		'api_nonce' => wp_create_nonce( 'wp_rest' ),
 		'repo'      => esc_attr( $atts['repo'] ),
 		'label'     => esc_attr( $atts['label'] ),
+		'id'        => esc_attr( $atts['id'] ),
 	);
 	wp_localize_script( 'ghactivity-average-label-time', 'ghactivity_avg_label_time', $args );
 	wp_enqueue_script( 'ghactivity-average-label-time' );
