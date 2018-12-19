@@ -67,14 +67,13 @@ class Ghactivity_Api {
 		 *
 		 * @since 2.1.0
 		 */
-		register_rest_route( 'ghactivity/v1', '/queries/average-label-time/repo/(?P<repo>[0-9a-z\-_\/]+)', array(
+		register_rest_route( 'ghactivity/v1', '/queries/average-label-time', array(
 			'methods'             => WP_REST_Server::READABLE,
 			'callback'            => array( $this, 'get_average_label_time' ),
 			'permission_callback' => array( $this, 'permissions_check' ),
 			'args'                => array(
-				'repo' => array(
-					'required'          => true,
-					'validate_callback' => array( $this, 'validate_string' ),
+				'id' => array(
+					'required' => true,
 				),
 			),
 		) );
@@ -347,14 +346,12 @@ class Ghactivity_Api {
 	 * @return WP_REST_Response $response Stats for a specific repo.
 	 */
 	public function get_average_label_time( $request ) {
-		if ( ! empty( $request['id'] ) || ( ! empty( $request['repo'] ) && ! empty( $request->get_query_params()['label'] ) ) ) {
-			$repo  = esc_html( $request['repo'] );
-			$label = explode( ',', esc_html( $request->get_query_params()['label'] ) );
-			$id    = esc_html( $request->get_query_params()['id'] );
+		if ( ! empty( $request['id'] ) ) {
+			$id = esc_html( $request['id'] );
 		} else {
 			return new WP_Error(
 				'not_found',
-				esc_html__( 'You did not specify a valid GitHub repo and/or issue label and/or ID', 'ghactivity' ),
+				esc_html__( 'You did not specify a ID for the term you want to query.', 'ghactivity' ),
 				array(
 					'status' => 404,
 				)
@@ -362,11 +359,9 @@ class Ghactivity_Api {
 		}
 
 		// [average_time, date_of_record, recorded_issues]
-		$records = GHActivity_Queries::fetch_average_label_time( $repo, $label, $id, null );
+		$records = GHActivity_Queries::fetch_average_label_time( $id, null );
 
 		$response = array(
-			'repo'    => $repo,
-			'label'   => $label,
 			'id'      => $id,
 			'records' => $records,
 		);
