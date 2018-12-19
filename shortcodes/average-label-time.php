@@ -48,6 +48,6 @@ function output_average_label_time( $atts ) {
 	wp_localize_script( 'ghactivity-average-label-time', 'ghactivity_avg_label_time', $args );
 	wp_enqueue_script( 'ghactivity-average-label-time' );
 
-	$class_name = preg_replace( '/\W/', '-', strtolower( html_entity_decode( $args['repo'] ) . '#' . html_entity_decode( $args['label'] ) ) );
+	$class_name = preg_replace( '/\W/', '-', strtolower( html_entity_decode( $args['repo'] ) . '#' . html_entity_decode( $args['label'] ) . html_entity_decode( $args['id'] ) ) );
 	return "<div id='avg-label-time' class='" . $class_name . "'></div>";
 }
