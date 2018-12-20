@@ -309,7 +309,7 @@ class GHActivity_GHApi {
 	 *
 	 * @return array $response_body Response body for each call.
 	 */
-	public function get_all_github_data( $query_url, $headers ) {
+	public function get_all_github_data( $query_url, $headers = array() ) {
 		$page        = 1;
 		$all_results = array();
 		// Fetch API until empty array will be returned.
