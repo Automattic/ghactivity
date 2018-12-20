@@ -20,6 +20,7 @@ class Ghactivity_Api {
 	 */
 	function __construct() {
 		add_action( 'rest_api_init', array( $this, 'register_endpoints' ) );
+		add_action( 'remove_duplicates', array( $this, 'remove_duplicate_issues' ) );
 	}
 
 	/**
@@ -105,6 +106,14 @@ class Ghactivity_Api {
 					'validate_callback' => array( $this, 'validate_string' ),
 				),
 			),
+		) );
+
+		/**
+		 * TODO: Remove me once data is fixed
+		 */
+		register_rest_route( 'ghactivity/v1', '/remove-duplicated-issues', array(
+			'methods'  => WP_REST_Server::READABLE,
+			'callback' => array( $this, 'schedule_duplicate_cleanup' ),
 		) );
 	}
 
@@ -422,6 +431,47 @@ class Ghactivity_Api {
 			'records'      => $records,
 		);
 		return new WP_REST_Response( $response, 200 );
+	}
+
+	/**
+	 * TODO: Remove these functions:
+	 * 	schedule_duplicate_cleanup
+	 * 	remove_duplicate_issues
+	 * Temporary function to remove all duplicate GHActivity issues created recently.
+	 */
+	public function schedule_duplicate_cleanup() {
+		wp_schedule_single_event( time(), 'remove_duplicates' );
+	}
+
+	public function remove_duplicate_issues() {
+		$status = get_option( 'ghactivity_removed_duplicate_issues' );
+
+		if ( ! empty( $status ) ) {
+			if ( 'done' === $status ) {
+				error_log( 'Skipping. Duplicates already removed' );
+			} elseif ( 'in-process' === $status ) {
+				error_log( 'Skipping. The removal is already in process' );
+			}
+			return true;
+		}
+
+		$repos = GHActivity_Queries::get_monitored_repos();
+		update_option( 'ghactivity_removed_duplicate_issues', 'in-process' );
+		foreach ( $repos as $term_id => $name ) {
+			$parsed_issues = [];
+			$post_ids = GHActivity_Queries::get_all_open_gh_issues( $name );
+			foreach ( $post_ids as $post_id ) {
+				$issue_number = get_post_meta( $post_id, 'number', true );
+				if ( ! in_array( $issue_number, $parsed_issues ) ) {
+					error_log( 'Adding: ' . $name . ' :: ' . $issue_number . ' :: ' . $post_id );
+					$parsed_issues[] = $issue_number;
+				} else {
+					error_log( 'Deleting: ' . $name . ' :: ' . $issue_number . ' :: ' . $post_id );
+					wp_delete_post( $post_id, true );
+				}
+			}
+		}
+		update_option( 'ghactivity_removed_duplicate_issues', 'done' );
 	}
 } // End class.
 new Ghactivity_Api();
