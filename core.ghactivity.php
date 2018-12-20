@@ -466,7 +466,7 @@ class GHActivity_Calls {
 	private function record_issue_details( $issue_details ) {
 		$post_id = GHActivity_Queries::find_gh_issue( $issue_details['repo_name'], $issue_details['number'] );
 
-		if ( $post_id ) {
+		if ( ! $post_id ) {
 			// Create taxonomies.
 			$taxonomies = array(
 				'ghactivity_repo'          => $issue_details['repo_name'],
@@ -599,6 +599,9 @@ class GHActivity_Calls {
 				$post_id      = $options['post_id'];
 			} else {
 				preg_match( '/(?<=repos\/)(.*?)(?=\/issues)/', $event->url, $match );
+				if ( ! isset( $event->issue->number ) ) {
+					continue;
+				}
 				$issue_number = $event->issue->number;
 				$repo_name    = $match[0];
 				$post_id      = GHActivity_Queries::find_gh_issue( $repo_name, $issue_number );
@@ -611,17 +614,22 @@ class GHActivity_Calls {
 
 			// If issue is closed/reopened - update ghactivity_issues_state accordingly, and continue to next event.
 			if ( 'closed' === $event->event ) {
+				error_log( '  -- Setting ghactivity_issues_state as closed' );
 				wp_set_post_terms( $post_id, 'closed', 'ghactivity_issues_state', false );
 				continue;
 			} elseif ( 'reopened' === $event->event ) {
+				error_log( '  -- Setting ghactivity_issues_state as open' );
 				wp_set_post_terms( $post_id, 'open', 'ghactivity_issues_state', false );
 				continue;
 			}
 
 			// Update label list according to event data.
-			if ( 'labeled' === $event->event ) { // Add missing labels if needed.
+			if ( 'labeled' === $event->event ) {
+				// Add missing labels if needed.
+				error_log( '  -- Labeled. Adding: ' . $event->label->name );
 				wp_set_post_terms( $post_id, $event->label->name, 'ghactivity_issues_labels', true );
 			} elseif ( 'unlabeled' === $event->event ) {
+				error_log( '  -- Unlabeled. Removing: ' . $event->label->name );
 				wp_remove_object_terms( $post_id, $event->label->name, 'ghactivity_issues_labels' );
 			}
 
@@ -655,6 +663,7 @@ class GHActivity_Calls {
 			}
 			$record['status']        = $event->event;
 			$record[ $event->event ] = $event->created_at;
+			error_log( '  -- Updating ghactivity_issues_labels tax.' );
 			update_term_meta( $term->term_id, $slug, $record );
 		}
 	}
