@@ -121,6 +121,13 @@ function ghactivity_options_init() {
 		'ghactivity',
 		'ghactivity_restart_triggers'
 	);
+	add_settings_field(
+		'ghactivity_query_label_slug',
+		__( 'Query Label Slug', 'ghactivity' ),
+		'ghactivity_query_label_slug_callback',
+		'ghactivity',
+		'ghactivity_restart_triggers'
+	);
 
 	// Full issue sync section.
 	add_settings_section(
@@ -353,6 +360,55 @@ function ghactivity_retrigger_callback() {
 	esc_html_e( 'These buttons allow you to restart actions in your GHactivity logs.', 'ghactivity' );
 	echo '</p>';
 }
+
+/**
+ * Re-fetch query taxonomies
+ *
+ */
+function ghactivity_query_label_slug_callback() {
+	echo '<p>';
+	esc_html_e( 'This button will re-build the Query Label Slug taxonomy.' );
+	echo '</p>';
+
+	echo '<div class="wrap">';
+	echo '<button onclick="triggerQueryLabelScan()" class="button button-secondary">';
+	esc_html_e( 'Trigger Query Label Rescan', 'ghactivity' );
+	echo '</button>';
+	echo '</div>';
+
+	$ajax_nonce      = wp_create_nonce( 'ghactivity-label-scan-nonce' );
+	$confirm_dialog  = esc_html__( 'Make sure not to run it more then once!', 'ghactivity' );
+	$response_dialog = esc_html__( 'Got this from the server: ', 'ghactivity' );
+	?>
+	<script type="text/javascript" >
+		function triggerQueryLabelScan($) {
+			if ( ! confirm( '<?php echo esc_html( $confirm_dialog ); ?>' ) ) {
+				return;
+			}
+			var data = {
+				'action': 'query_label_slug_action',
+				'security': '<?php echo esc_html( $ajax_nonce ); ?>',
+			};
+
+			// since 2.8 ajaxurl is always defined in the admin header and points to admin-ajax.php
+			jQuery.post( ajaxurl, data, function( response ) {
+				alert( '<?php echo esc_html( $response_dialog ); ?>'  + response );
+			} );
+		}
+	</script>
+	<?php
+}
+
+add_action( 'wp_ajax_query_label_slug_action', 'query_label_slug_action' );
+
+function query_label_slug_action() {
+	check_ajax_referer( 'ghactivity-label-scan-nonce', 'security' );
+	wp_suspend_cache_addition( true );
+	do_action( 'gh_query_average_label_time' );
+	wp_die(); // this is required to terminate immediately and return a proper response.
+}
+
+
 
 /**
  * GitHub Label Scan section.
