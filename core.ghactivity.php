@@ -466,7 +466,7 @@ class GHActivity_Calls {
 	private function record_issue_details( $issue_details ) {
 		$post_id = GHActivity_Queries::find_gh_issue( $issue_details['repo_name'], $issue_details['number'] );
 
-		if ( $post_id ) {
+		if ( ! $post_id ) {
 			// Create taxonomies.
 			$taxonomies = array(
 				'ghactivity_repo'          => $issue_details['repo_name'],
