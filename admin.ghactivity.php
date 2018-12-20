@@ -401,37 +401,25 @@ add_action( 'wp_ajax_label_scan_action', 'label_scan_action' );
 function label_scan_action() {
 	check_ajax_referer( 'ghactivity-label-scan-nonce', 'security' );
 	wp_suspend_cache_addition( true );
-	global $wpdb;
-	$gha = new GHActivity_Calls();
+	$gha   = new GHActivity_Calls();
+	$repos = GHActivity_Queries::get_monitored_repos( 'names' );
 
-	$post_ids = $wpdb->get_col( $wpdb->prepare(
-		'SELECT ID FROM wp_posts WHERE post_type = %s AND post_status = %s ORDER BY ID DESC',
-		array( 'ghactivity_issue', 'publish' )
-	) );
-
-	$post_ids_chunks = array_chunk( $post_ids, 200 );
-	foreach ( $post_ids_chunks as $post_ids_chunk ) {
-		foreach ( $post_ids_chunk as $post_id ) {
+	foreach ( $repos as $repo ) {
+		$post_ids = GHActivity_Queries::get_all_open_gh_issues( $repo );
+		foreach ( $post_ids as $post_id ) {
+			set_time_limit( 300 );
 			$issue_number = get_post_meta( $post_id, 'number', true );
-			$terms = get_terms( array(
-				'object_ids' => $post_id,
-				'taxonomy'   => 'ghactivity_repo',
-			) );
-			if ( empty( $terms ) ) {
-				continue;
-			}
-			$repo_name = $terms[0]->name;
-			$response     = $gha->api->get_github_issue_events( $repo_name, $issue_number );
+			$response     = $gha->api->get_github_issue_events( $repo, $issue_number );
 			$options      = array(
 				'issue_number' => $issue_number,
-				'repo_name'    => $repo_name,
+				'repo_name'    => $repo,
 				'post_id'      => $post_id,
 			);
+			error_log( 'Rescanning ' . $repo . ' :: ' . $issue_number );
 			$gha->update_issue_records( $response, $options );
-			sleep( 20 );
 		}
-		sleep( 120 );
 	}
+	error_log( 'Done with rescan!' );
 	wp_die(); // this is required to terminate immediately and return a proper response.
 }
 

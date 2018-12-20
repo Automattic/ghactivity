@@ -584,4 +584,36 @@ class GHActivity_Queries {
 
 		return array( $minified_columns, $project->html_url );
 	}
+
+	/**
+	 * Returns array of post_ids of open issues for specified repo
+	 */
+	public static function get_all_open_gh_issues( $repo_name ) {
+		$is_open_args = array(
+			'post_type'      => 'ghactivity_issue',
+			'post_status'    => 'publish',
+			'fields'          => 'ids', // Only get post IDs
+			'posts_per_page' => -1,
+			'tax_query'      => array(
+				'relation' => 'AND',
+				array(
+					'taxonomy' => 'ghactivity_issues_state',
+					'field'    => 'name',
+					'terms'    => 'open',
+				),
+				array(
+					'taxonomy' => 'ghactivity_repo',
+					'field'    => 'name',
+					'terms'    => $repo_name,
+				),
+			),
+		);
+		$posts_ids = wp_cache_get( 'all_open_gh_issues_' . $repo_name );
+		if ( false === $posts_ids ) {
+			$posts_ids = get_posts( $is_open_args );
+			wp_reset_postdata();
+			wp_cache_set( 'all_open_gh_issues_' . $repo_name, $posts_ids, '', 30 * 60 /** 30 min */ );
+		}
+		return $posts_ids;
+	}
 }

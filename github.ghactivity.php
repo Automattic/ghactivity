@@ -214,7 +214,7 @@ class GHActivity_GHApi {
 				esc_html( $issue_number ? '/' . $issue_number : '' ),
 				$this->token
 			);
-			$single_response_body = $this->get_github_data( $query_url );
+			$single_response_body = $this->get_all_github_data( $query_url );
 			$response_body        = array_merge( $single_response_body, $response_body );
 		}
 		return $response_body;
@@ -309,7 +309,7 @@ class GHActivity_GHApi {
 	 *
 	 * @return array $response_body Response body for each call.
 	 */
-	public function get_all_github_data( $query_url, $headers ) {
+	public function get_all_github_data( $query_url, $headers = array() ) {
 		$page        = 1;
 		$all_results = array();
 		// Fetch API until empty array will be returned.
