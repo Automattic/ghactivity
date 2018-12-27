@@ -441,19 +441,8 @@ class Ghactivity_Api {
 	}
 
 	public function remove_duplicate_issues() {
-		$status = get_option( 'ghactivity_removed_duplicate_issues' );
-
-		if ( ! empty( $status ) ) {
-			if ( 'done' === $status ) {
-				error_log( 'Skipping. Duplicates already removed' );
-			} elseif ( 'in-process' === $status ) {
-				error_log( 'Skipping. The removal is already in process' );
-			}
-			return true;
-		}
-
 		$repos = GHActivity_Queries::get_monitored_repos();
-		update_option( 'ghactivity_removed_duplicate_issues', 'in-process' );
+
 		foreach ( $repos as $term_id => $name ) {
 			$parsed_issues = [];
 			$post_ids = GHActivity_Queries::get_all_open_gh_issues( $name );
@@ -463,12 +452,11 @@ class Ghactivity_Api {
 					error_log( 'Adding: ' . $name . ' :: ' . $issue_number . ' :: ' . $post_id );
 					$parsed_issues[] = $issue_number;
 				} else {
-					error_log( 'Deleting: ' . $name . ' :: ' . $issue_number . ' :: ' . $post_id );
-					wp_delete_post( $post_id, true );
+					error_log( 'Trashing: ' . $name . ' :: ' . $issue_number . ' :: ' . $post_id );
+					wp_trash_post( $post_id, true );
 				}
 			}
 		}
-		update_option( 'ghactivity_removed_duplicate_issues', 'done' );
 	}
 } // End class.
 new Ghactivity_Api();
