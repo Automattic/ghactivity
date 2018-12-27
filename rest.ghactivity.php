@@ -444,13 +444,19 @@ class Ghactivity_Api {
 		$repos = GHActivity_Queries::get_monitored_repos();
 
 		foreach ( $repos as $term_id => $name ) {
-			$parsed_issues = [];
+			$parsed_issues = get_option( 'gha_remove_duplicate_issues_' . $name );
+			if ( ! isset( $parsed_issues ) || ! is_array( $parsed_issues ) ) {
+				$parsed_issues = [];
+				update_option( 'gha_remove_duplicate_issues_' . $name, $parsed_issues );
+			}
+			error_log( 'Parsed issues: ' . $parsed_issues );
+
 			$post_ids = GHActivity_Queries::get_all_open_gh_issues( $name );
 			foreach ( $post_ids as $post_id ) {
 				$issue_number = get_post_meta( $post_id, 'number', true );
 				if ( ! in_array( $issue_number, $parsed_issues ) ) {
-					error_log( 'Adding: ' . $name . ' :: ' . $issue_number . ' :: ' . $post_id );
 					$parsed_issues[] = $issue_number;
+					update_option( 'gha_remove_duplicate_issues_' . $name, $parsed_issues );
 				} else {
 					error_log( 'Trashing: ' . $name . ' :: ' . $issue_number . ' :: ' . $post_id );
 					wp_trash_post( $post_id, true );
