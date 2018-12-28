@@ -1,5 +1,4 @@
 const path = require('path');
-const webpack = require('webpack');
 
 const webpackConfig = {
 	devtool: 'source-map',
@@ -8,6 +7,7 @@ const webpackConfig = {
 		'shortcodes/repo-activity': path.resolve(__dirname, 'shortcodes/js/repo-activity.js'),
 		'shortcodes/average-label-time': path.resolve(__dirname, 'shortcodes/js/average-label-time.js'),
 		'shortcodes/project-stats': path.resolve(__dirname, 'shortcodes/js/project-stats.js'),
+		'shortcodes/repo-label-state': path.resolve(__dirname, 'shortcodes/js/repo-label-state.js'),
 		// 'shortcodes/main-report': path.resolve(__dirname, 'shortcodes/js/main-report.js'),
 		// 'shortcodes/team-activity': path.resolve(__dirname, 'shortcodes/js/team-activity.js'),
 	},

@@ -34,7 +34,7 @@ class Ghactivity_Api {
 		 *
 		 * @since 2.0.0
 		 */
-		register_rest_route( 'ghactivity/v1', '/sync/(?P<repo>[a-zA-Z0-9-]+)', array(
+		register_rest_route( 'ghactivity/v1', '/sync/(?P<repo>[0-9a-z\-_\/]+)', array(
 			'methods'             => WP_REST_Server::EDITABLE,
 			'callback'            => array( $this, 'trigger_sync' ),
 			'permission_callback' => array( $this, 'permissions_check' ),
@@ -113,6 +113,23 @@ class Ghactivity_Api {
 		register_rest_route( 'ghactivity/v1', '/remove-duplicated-issues', array(
 			'methods'  => WP_REST_Server::READABLE,
 			'callback' => array( $this, 'schedule_duplicate_cleanup' ),
+			) );
+
+			/**
+		 * Get repo label state for specific repo.
+		 *
+		 * @since 2.1.0
+		 */
+		register_rest_route( 'ghactivity/v1', '/queries/repo-label-state/repo/(?P<repo>[0-9a-z\-_\/]+)', array(
+			'methods'             => WP_REST_Server::READABLE,
+			'callback'            => array( $this, 'get_label_repo_state' ),
+			'permission_callback' => array( $this, 'permissions_check' ),
+			'args'                => array(
+				'repo' => array(
+					'required'          => true,
+					'validate_callback' => array( $this, 'validate_string' ),
+				),
+			),
 		) );
 	}
 
@@ -177,6 +194,16 @@ class Ghactivity_Api {
 		if ( empty( $repos_to_monitor ) ) {
 			return new WP_REST_Response(
 				esc_html__( 'You currently do not monitor activity on any repository. You cannot use this option yet.', 'ghactivity' ),
+				200
+			);
+		}
+
+		// Reset full sync status
+		if ( isset( $options[ $repo . '_full_sync' ], $request['reset'] ) && 'true' === $request['reset'] ) {
+			unset( $options[ $repo . '_full_sync' ] );
+			update_option( 'ghactivity', $options );
+			return new WP_REST_Response(
+				esc_html__( 'Full sync status reset', 'ghactivity' ),
 				200
 			);
 		}
@@ -464,5 +491,42 @@ class Ghactivity_Api {
 			}
 		}
 	}
+
+	/**
+	 * Gets current and previous repo states to be used in a shortcode
+	 *
+	 * @since 2.1.0
+	 *
+	 * @param WP_REST_Request $request Full details about the request.
+	 *
+	 * @return WP_REST_Response $response Stats for a specific repo.
+	 */
+	public function get_label_repo_state( $request ) {
+		if ( isset( $request['repo'] ) ) {
+			$repo = esc_html( $request['repo'] );
+		} else {
+			return new WP_Error(
+				'not_found',
+				esc_html__( 'You did not specify a valid GitHub repo', 'ghactivity' ),
+				array(
+					'status' => 404,
+				)
+			);
+		}
+
+		// [ current_label_state, current_label_state_date], [ previous_label_state, previous_label_state_date ]
+		$records = GHActivity_Queries::fetch_repo_label_state( $repo );
+
+		if ( empty( $records ) ) {
+			return new WP_REST_Response( array( 'error' => 'Label State not available for now. Please wait until data is collected (24h+)' ), 404 );
+		}
+		$response = array(
+			'repo'                 => $repo,
+			'current_label_state'  => $records[0],
+			'previous_label_state' => $records[1],
+		);
+		return new WP_REST_Response( $response, 200 );
+	}
+
 } // End class.
 new Ghactivity_Api();

@@ -108,13 +108,6 @@ function ghactivity_options_init() {
 		'ghactivity'
 	);
 	add_settings_field(
-		'ghactivity_label_scan',
-		__( 'Initialize GitHub labels scan', 'ghactivity' ),
-		'ghactivity_label_scan_callback',
-		'ghactivity',
-		'ghactivity_restart_triggers'
-	);
-	add_settings_field(
 		'ghactivity_redo_graphs',
 		__( 'Re-build Graphs', 'ghactivity' ),
 		'ghactivity_redo_graphs_callback',
@@ -261,35 +254,41 @@ function ghactivity_sync_settings_full_sync_callback() {
 		},
 	$repos_to_monitor );
 
+	if ( empty( $repos_to_monitor ) ) {
+		return esc_html_e( 'You currently do not monitor activity on any repository. You cannot use this option yet.', 'ghactivity' );
+	}
+
 	// Gather info about our watched repos, and the current sync status.
-	if ( ! empty( $repos_to_monitor ) ) {
-		foreach ( $repos_to_monitor as $repo ) {
-			$sync_status = isset( $options[ $repo . '_full_sync' ] ) ? $options[ $repo . '_full_sync' ] : '';
-			if ( ! empty( $sync_status ) ) {
-				if ( 'done' === $sync_status['status'] ) {
-					printf(
-						__( 'All events for the %1$s repository have already been synchronized. Check them <a href="%2$s">here</a>.', 'ghactivity' ),
-						esc_html( $repo ),
-						esc_url( get_admin_url( null, 'edit.php?post_type=ghactivity_issue' ) )
-					);
-				} else {
-					printf(
-						__( 'Synchronization for the %1$s repository in progress. There are still %2$d pages to process.', 'ghactivity' ),
-						esc_html( $repo ),
-						absint( $sync_status['pages'] )
-					);
-				}
-			} else {
-				// we push to start the sync here.
+	foreach ( $repos_to_monitor as $repo ) {
+		$sync_status = isset( $options[ $repo . '_full_sync' ] ) ? $options[ $repo . '_full_sync' ] : '';
+		printf( '<div><strong>%1$s</strong>: ', esc_attr( $repo ) );
+		if ( ! empty( $sync_status ) ) {
+			if ( 'done' === $sync_status['status'] ) {
 				printf(
-					'<div><strong>%1$s</strong>: <input class="full_sync" id="%1$s_full_sync" type="button" name="%1$s_full_sync" value="%2$s" class="button button-secondary" /><p id="%1$s_full_sync_details" style="display:none;"></p></div>',
-					esc_attr( $repo ),
-					esc_html__( 'Start synchronizing all issues', 'ghactivity' )
+					__( 'All events for the %1$s repository have already been synchronized. Check them <a href="%2$s">here</a>.', 'ghactivity' ),
+					esc_html( $repo ),
+					esc_url( get_admin_url( null, 'edit.php?post_type=ghactivity_issue&ghactivity_repo=' . $repo ) )
+				);
+			} else {
+				printf(
+					__( 'Synchronization for the %1$s repository in progress. There are still %2$d pages to process.', 'ghactivity' ),
+					esc_html( $repo ),
+					absint( $sync_status['pages'] )
 				);
 			}
+			printf(
+				'<input class="reset_sync_status" id="%1$s_reset_sync_status" type="button" value="Reset sync status" class="button button-secondary" />',
+				esc_attr( $repo )
+			);
+		} else {
+			// we push to start the sync here.
+			printf(
+				'<input class="full_sync" id="%1$s_full_sync" type="button" name="%1$s_full_sync" value="%2$s" class="button button-secondary" /><p id="%1$s_full_sync_details" style="display:none;"></p>',
+				esc_attr( $repo ),
+				esc_html__( 'Start synchronizing all issues', 'ghactivity' )
+			);
 		}
-	} else {
-		esc_html_e( 'You currently do not monitor activity on any repository. You cannot use this option yet.', 'ghactivity' );
+		printf( '</div>' );
 	}
 }
 
@@ -408,80 +407,8 @@ function query_label_slug_action() {
 	wp_die(); // this is required to terminate immediately and return a proper response.
 }
 
-
-
-/**
- * GitHub Label Scan section.
- *
- * @since 2.1.0
- */
-function ghactivity_label_scan_callback() {
-	echo '<p>';
-	esc_html_e( 'This button will scan for all the label updates for recorded issues' );
-	echo '</p>';
-
-	echo '<div class="wrap">';
-	echo '<button onclick="triggerLabelScan()" class="button button-secondary">';
-	esc_html_e( 'Trigger Label Rescan', 'ghactivity' );
-	echo '</button>';
-	echo '</div>';
-
-	$ajax_nonce      = wp_create_nonce( 'ghactivity-label-scan-nonce' );
-	$confirm_dialog  = esc_html__( 'This is time-consuming operation. Make sure not to run it more then once!', 'ghactivity' );
-	$response_dialog = esc_html__( 'Got this from the server: ', 'ghactivity' );
-	?>
-		<script type="text/javascript" >
-		function triggerLabelScan($) {
-			if ( ! confirm( '<?php echo esc_html( $confirm_dialog ); ?>' ) ) {
-				return;
-			}
-			var data = {
-				'action': 'label_scan_action',
-				'security': '<?php echo esc_html( $ajax_nonce ); ?>',
-			};
-
-			// since 2.8 ajaxurl is always defined in the admin header and points to admin-ajax.php
-			jQuery.post( ajaxurl, data, function( response ) {
-				alert( '<?php echo esc_html( $response_dialog ); ?>'  + response );
-			} );
-		}
-		</script>
-		<?php
-}
-
-add_action( 'wp_ajax_label_scan_action', 'label_scan_action' );
-
-/**
- * Goes through all the existing `ghactivity_issue` posts and update their labels & state
- */
-function label_scan_action() {
-	check_ajax_referer( 'ghactivity-label-scan-nonce', 'security' );
-	wp_suspend_cache_addition( true );
-	$gha   = new GHActivity_Calls();
-	$repos = GHActivity_Queries::get_monitored_repos( 'names' );
-
-	foreach ( $repos as $repo ) {
-		$post_ids = GHActivity_Queries::get_all_open_gh_issues( $repo );
-		foreach ( $post_ids as $post_id ) {
-			set_time_limit( 300 );
-			$issue_number = get_post_meta( $post_id, 'number', true );
-			$response     = $gha->api->get_github_issue_events( $repo, $issue_number );
-			$options      = array(
-				'issue_number' => $issue_number,
-				'repo_name'    => $repo,
-				'post_id'      => $post_id,
-			);
-			error_log( 'Rescanning ' . $repo . ' :: ' . $issue_number );
-			$gha->update_issue_records( $response, $options );
-		}
-	}
-	error_log( 'Done with rescan!' );
-	wp_die(); // this is required to terminate immediately and return a proper response.
-}
-
 /**
  * Add a button to re-build our graphs.
- *
  */
 function ghactivity_redo_graphs_callback() {
 	printf(

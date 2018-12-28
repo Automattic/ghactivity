@@ -9,8 +9,9 @@
 class GHActivity_GHApi {
 	private $token;
 
-	function __construct( $token ) {
-		$this->token = $token;
+	function __construct() {
+		$options     = get_option( 'ghactivity' );
+		$this->token = $options['access_token'];
 	}
 
 	/**
@@ -164,7 +165,7 @@ class GHActivity_GHApi {
 	 *
 	 * @return int $issues_number Number of open issues.
 	 */
-	public function get_repo_issues_count( $repo_name ) {
+	public function get_repo_open_issues_count( $repo_name ) {
 		if ( empty( $repo_name ) ) {
 			// Fallback.
 			return 0;
@@ -221,7 +222,7 @@ class GHActivity_GHApi {
 	}
 
 	/**
-	 * Remote call to get all label events for every monitored repo
+	 * Remote call to get issue objects. Request returns up to 100 issues per request.
 	 *
 	 * @since 2.1.0
 	 *
@@ -230,12 +231,13 @@ class GHActivity_GHApi {
 	 *
 	 * @return array
 	 */
-	public function get_github_issues( $repo_name, $page_number = 1 ) {
+	public function get_github_issues( $repo_name, $page_number = 1, $issues_state = 'open' ) {
 		$query_url = sprintf(
-			'https://api.github.com/repos/%1$s/issues?access_token=%2$s&page=%3$s&per_page=100',
+			'https://api.github.com/repos/%1$s/issues?access_token=%2$s&page=%3$s&per_page=100&state=%4$s',
 			esc_html( $repo_name ),
 			$this->token,
-			$page_number
+			$page_number,
+			$issues_state
 		);
 		return $this->get_github_data( $query_url );
 	}
@@ -380,5 +382,48 @@ class GHActivity_GHApi {
 	 */
 	private function project_api_headers() {
 		return array( 'accept' => 'application/vnd.github.inertia-preview+json' );
+	}
+
+	/**
+	 * Get the list of repo label names from GH API
+	 *
+	 * @since 2.0.0
+	 *
+	 * @param string $repo_name Name of the repo we are interested in.
+	 *
+	 * @return array Array of repo label names.
+	 */
+	public function get_repo_label_names( $repo_name ) {
+		if ( empty( $repo_name ) ) {
+			// Fallback.
+			return array();
+		}
+
+		$page       = 1;
+		$all_labels = array();
+		$query_url  = sprintf(
+			'https://api.github.com/repos/%1$s/labels?access_token=%2$s&per_page=100',
+			$repo_name,
+			$this->token
+		);
+
+		// Fetch API until empty array will be returned.
+		do {
+			$paged_query_url = $query_url . '&page=' . $page;
+			$body            = $this->get_github_data( $paged_query_url );
+			$all_labels      = array_merge( $all_labels, $body );
+			$page++;
+		} while ( ! empty( $body ) );
+
+		if ( empty( $all_labels ) ) {
+			return array();
+		}
+
+		return array_map(
+			function ( $label ) {
+				return $label->name;
+			},
+			$all_labels
+		);
 	}
 }

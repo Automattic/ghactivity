@@ -25,6 +25,7 @@
 	"homepage": "https://wordpress.org/plugins/ghactivity/",
 	"dependencies": {
 		"chart.js": "^2.7.2",
+		"chartjs-plugin-labels": "^1.1.0",
 		"prop-types": "^15.6.0",
 		"react": "^16.1.1",
 		"react-chartjs-2": "^2.7.4",

@@ -339,34 +339,16 @@ class GHActivity_Queries {
 			$intersected_meta = array_intersect_key( $intersected_meta, $meta );
 		}
 
-		/**
-		 * Iterate over all the records and capture only opened & currently labeled issues
-		 * Also fills the $dates & $slugs arrays with slugs and labeled dates
-		 */
-		foreach ( $intersected_meta as $repo_slug => $serialized ) {
-			// count only issues from specific repo.
-			if ( strpos( strtolower( $repo_slug ), strtolower( $repo_name ) ) === 0 ) {
-				$issue_number = explode( '#', $repo_slug )[1];
-				$post_id      = self::find_open_gh_issue( $repo_name, $issue_number );
-				$label_ary    = unserialize( $serialized[0] );
-
-				// We want to capture only opened, labeled issues.
-				if ( $post_id && 'labeled' === $label_ary['status'] ) {
-					$time                = time() - strtotime( $label_ary['labeled'] );
-					$dates[]             = $time;
-					$slugs[ $repo_slug ] = $time;
-				}
-			}
-		}
-		return array( (int) array_sum( $dates ) / count( $dates ), $slugs );
+		$filtered_labels = self::filter_labeled_labels( $intersected_meta, $repo_name );
+		return array( (int) array_sum( $filtered_labels[1] ) / count( $filtered_labels[1] ), $filtered_labels[0] );
 	}
 
-	public static function find_open_gh_issue( $repo_name, $issue_number ) {
-		$post_id      = null;
+	public static function get_all_open_gh_issues( $repo_name ) {
 		$is_open_args = array(
 			'post_type'      => 'ghactivity_issue',
 			'post_status'    => 'publish',
-			'posts_per_page' => 1,
+			'fields'          => 'ids', // Only get post IDs
+			'posts_per_page' => -1,
 			'tax_query'      => array(
 				'relation' => 'AND',
 				array(
@@ -380,22 +362,15 @@ class GHActivity_Queries {
 					'terms'    => $repo_name,
 				),
 			),
-			'meta_query' => array(
-				array(
-					'key'     => 'number',
-					'value'   => $issue_number,
-					'compare' => '=',
-				),
-			),
 		);
-		$query = new WP_Query( $is_open_args );
-		if ( $query->have_posts() ) {
-			$query->the_post();
-			$post_id = $query->post->ID;
-		}
-		wp_reset_postdata();
 
-		return $post_id;
+		$posts_ids = wp_cache_get( 'all_open_gh_issues_' . $repo_name );
+		if ( false === $posts_ids ) {
+			$posts_ids = get_posts( $is_open_args );
+			wp_reset_postdata();
+			wp_cache_set( 'all_open_gh_issues_' . $repo_name, $posts_ids, '', 30 * 60 /** 30 min */ );
+		}
+		return $posts_ids;
 	}
 
 	/**
@@ -407,11 +382,12 @@ class GHActivity_Queries {
 	 *
 	 * @return int $post_id ID of the post. Null if not found.
 	 */
-	public static function find_gh_issue( $repo_name, $issue_number ) {
-		$post_id     = null;
-		$is_new_args = array(
+	public static function find_gh_issue( $repo_name, $issue_number, $fields = 'ids'  ) {
+		wp_suspend_cache_addition( true );
+		$args = array(
 			'post_type'      => 'ghactivity_issue',
 			'post_status'    => 'publish',
+			'fields'         => $fields,
 			'posts_per_page' => 1,
 			'tax_query'      => array(
 				array(
@@ -420,7 +396,7 @@ class GHActivity_Queries {
 					'terms'    => $repo_name,
 				),
 			),
-			'meta_query' => array(
+			'meta_query'     => array(
 				array(
 					'key'     => 'number',
 					'value'   => $issue_number,
@@ -428,14 +404,13 @@ class GHActivity_Queries {
 				),
 			),
 		);
-		$query = new WP_Query( $is_new_args );
-		if ( $query->have_posts() ) {
-			$query->the_post();
-			$post_id = $query->post->ID;
-		}
+		$result = get_posts( $args );
 		wp_reset_postdata();
+		if ( ! empty( $result ) ) {
+			return $result[0];
+		}
 
-		return $post_id;
+		return null;
 	}
 
 	public static function fetch_average_label_time( $id, $range = null ) {
@@ -503,7 +478,12 @@ class GHActivity_Queries {
 				),
 			),
 		);
-		$repos_to_monitor = get_terms( $repos_query_args );
+		$repos_to_monitor = wp_cache_get( 'gh_monitored_repos_' . $fields );
+		if ( false === $repos_to_monitor ) {
+			$repos_to_monitor = get_terms( $repos_query_args );
+			wp_reset_postdata();
+			wp_cache_set( 'gh_monitored_repos' . $fields, $repos_to_monitor, '', 24 * 60 * 60 /** 24 hours */ );
+		}
 
 		return $repos_to_monitor;
 	}
@@ -524,7 +504,6 @@ class GHActivity_Queries {
 				),
 			),
 		);
-
 		// FIXME: Add caching
 		$posts = get_posts( $args );
 
@@ -585,9 +564,16 @@ class GHActivity_Queries {
 	}
 
 	/**
-	 * Returns array of post_ids of open issues for specified repo
+	 * Search for all existing `ghactivity_issue` posts
+	 * Return array of post_ids if found, and null if not.
+	 *
+	 * @since 2.0.0
+	 *
+	 * @param string $repo_name name of the repo.
+	 *
+	 * @return array $posts Return array of the open issue objects of specified repo.
 	 */
-	public static function get_all_open_gh_issues( $repo_name ) {
+	public static function get_all_open_gh_issue( $repo_name ) {
 		$is_open_args = array(
 			'post_type'      => 'ghactivity_issue',
 			'post_status'    => 'publish',
@@ -607,6 +593,7 @@ class GHActivity_Queries {
 				),
 			),
 		);
+
 		$posts_ids = wp_cache_get( 'all_open_gh_issues_' . $repo_name );
 		if ( false === $posts_ids ) {
 			$posts_ids = get_posts( $is_open_args );
@@ -614,5 +601,196 @@ class GHActivity_Queries {
 			wp_cache_set( 'all_open_gh_issues_' . $repo_name, $posts_ids, '', 30 * 60 /** 30 min */ );
 		}
 		return $posts_ids;
+	}
+
+	/**
+	 * Walking through label meta and filters out labels from other repos, from closed issues, and unlabeled labels
+	 * Returns an array of array of label slugs and passed time since it was labeled
+	 *
+	 * @since 2.0.0
+	 *
+	 * @param array  $meta Array of label meta objects.
+	 * @param string $repo_name name of the repo.
+	 *
+	 * @return array
+	 */
+	public static function filter_labeled_labels( $meta, $repo_name ) {
+		$dates    = array();
+		$slugs    = array();
+		$post_ids = self::get_all_open_gh_issues( $repo_name );
+		$post_id  = null;
+		foreach ( $meta as $repo_slug => $serialized ) {
+			// count only issues from specific repo.
+			if ( strpos( strtolower( $repo_slug ), strtolower( $repo_name ) ) === 0 ) {
+				$issue_number = explode( '#', $repo_slug )[1];
+				$label_ary    = unserialize( $serialized[0] );
+				foreach ( $post_ids as $id ) {
+					set_time_limit( 300 );
+					if ( get_post_meta( $id, 'number', 1 ) === $issue_number ) {
+						$post_id = $id;
+					}
+				}
+
+				// We want to capture only opened, labeled issues.
+				if ( $post_id && 'labeled' === $label_ary['status'] ) {
+					$time                = time() - strtotime( $label_ary['labeled'] );
+					$dates[]             = $time;
+					$slugs[ $repo_slug ] = $time;
+				}
+			}
+		}
+
+		return array( $slugs, $dates );
+	}
+
+	/**
+	 * Returns associated array of repo labels and issue slugs labeled with these labels
+	 *
+	 * @since 2.0.0
+	 *
+	 * @param string $repo_name name of the repo.
+	 *
+	 * @return array It looks like: [ [ "Widget Visibility" => [ "Automattic/jetpack#681", "Automattic/jetpack#10538"] ], $repo_open_issues_count ]
+	 */
+	public static function current_repo_labels_state( $repo_name ) {
+		$query = array(
+			'taxonomy' => 'ghactivity_repo',
+			'name'     => $repo_name,
+		);
+
+		$repo_term              = get_terms( $query )[0];
+		$repo_labels            = get_term_meta( $repo_term->term_id, 'repo_labels', 1 );
+		$repo_open_issues_count = get_term_meta( $repo_term->term_id, 'open_issues_count', 1 );
+
+		if ( empty( $repo_labels ) || empty( $repo_open_issues_count ) ) {
+			throw new WP_Error( 'current_repo_labels_state', '`gh_query_update_repo_meta` was never run for ' > $repo_name );
+		}
+
+		$label_terms = get_terms(
+			array(
+				'taxonomy' => 'ghactivity_issues_labels',
+				'fields'   => 'id=>name',
+			)
+		);
+		$repo_labels = array_map( function( $label ) {
+			return strtolower( $label );
+		}, $repo_labels );
+		// Filters out label_terms which is part of the repo.
+		// We might want to strtolower during comparison, to make sure we not miss some of the labels.
+		$repo_label_terms = array();
+		foreach ( $label_terms as $id => $name ) {
+			if ( in_array( strtolower( $name ), $repo_labels ) ) {
+				$repo_label_terms[ $id ] = $name;
+			}
+		}
+
+		$repo_label_issues = array();
+		foreach ( $repo_label_terms as $id => $name ) {
+			$meta  = get_term_meta( $id );
+			// Get only repo slugs such as `"Automattic/jetpack#9925" => 9770274,`.
+			$slugs = self::filter_labeled_labels( $meta, $repo_name )[0];
+			$slugs = array_keys( $slugs );
+
+			$repo_label_issues[ $name ] = $slugs;
+		}
+
+		return [ $repo_label_issues, $repo_open_issues_count ];
+	}
+
+	/**
+	 * Fetching all the the posts marked with `repo_label_state` taxonomy for specified repo
+	 * Returns array of 2 posts. Tries to pick up most recent posts with ~1 week difference
+	 *
+	 * @since 2.0.0
+	 *
+	 * @param string $repo_name repository name which same as for ghactivity_repo term.
+	 *
+	 * @return array [ current_label_state, open_issues_count, current_label_state_date], [ previous_label_state, open_issues_count, previous_label_state_date ]
+	 */
+	public static function fetch_repo_label_state( $repo_name ) {
+		$args = array(
+			'post_type'      => 'gh_query_record',
+			'post_status'    => 'publish',
+			'posts_per_page' => -1,
+			'orderby'        => 'date',
+			'order'          => 'DESC',
+			'tax_query'      => array(
+				'relation' => 'AND',
+				array(
+					'taxonomy' => 'ghactivity_query_record_type',
+					'field'    => 'name',
+					'terms'    => 'repo_label_state',
+				),
+				array(
+					'taxonomy' => 'ghactivity_repo',
+					'field'    => 'name',
+					'terms'    => $repo_name,
+				),
+			),
+		);
+
+		// FIXME: Add caching
+		$posts           = get_posts( $args );
+		$first_post      = array_shift( $posts );
+		$first_post_date = strtotime( $first_post->post_date );
+		$prev_week       = time() - ( 7 * 24 * 60 * 60 ); // 7 days
+
+		$second_post = array_pop( $posts );
+		if ( null === $first_post || null === $second_post ) {
+			return array();
+		}
+
+		foreach ( $posts as $post ) {
+			$post_is_week_old = $first_post_date - strtotime( $post->post_date ) > $prev_week;
+			if ( $post_is_week_old ) {
+				$second_post = $post;
+				break;
+			}
+		}
+
+		return array(
+			array(
+				get_post_meta( $first_post->ID, 'final_state', true ),
+				get_post_meta( $first_post->ID, 'open_issues_count', true ),
+				$first_post->post_date,
+			),
+			array(
+				get_post_meta( $second_post->ID, 'final_state', true ),
+				get_post_meta( $second_post->ID, 'open_issues_count', true ),
+				$second_post->post_date,
+			),
+		);
+	}
+
+	/**
+	 * TODO: Remove it after first successful sync.
+	 * Temporary function to remove all duplicate GHActivity issues created recently.
+	 */
+	public static function remove_duplicate_issues() {
+		$status = get_option( 'ghactivity_removed_duplicate_issues' );
+
+		if ( ! empty( $status ) && 'done' === $status ) {
+			error_log( 'Skipping. Duplicates already removed' );
+			return true;
+		}
+
+		$repos = self::get_monitored_repos();
+
+		foreach ( $repos as $term_id => $name ) {
+			$parsed_issues = [];
+			$post_ids = self::get_all_open_gh_issues( $name );
+			foreach ( $post_ids as $post_id ) {
+				$issue_number = get_post_meta( $post_id, 'number', true );
+				if ( ! in_array( $issue_number, $parsed_issues ) ) {
+					error_log( 'Adding: ' . $name . ' :: ' . $issue_number . ' :: ' . $post_id );
+					$parsed_issues[] = $issue_number;
+				} else {
+					error_log( 'Deleting: ' . $name . ' :: ' . $issue_number . ' :: ' . $post_id );
+					wp_delete_post( $post_id, true );
+				}
+			}
+		}
+
+		update_option( 'ghactivity_removed_duplicate_issues', 'done' );
 	}
 }
