@@ -34,7 +34,7 @@ class Ghactivity_Api {
 		 *
 		 * @since 2.0.0
 		 */
-		register_rest_route( 'ghactivity/v1', '/sync/(?P<repo>[a-zA-Z0-9-]+)', array(
+		register_rest_route( 'ghactivity/v1', '/sync/(?P<repo>[0-9a-z\-_\/]+)', array(
 			'methods'             => WP_REST_Server::EDITABLE,
 			'callback'            => array( $this, 'trigger_sync' ),
 			'permission_callback' => array( $this, 'permissions_check' ),
@@ -177,6 +177,16 @@ class Ghactivity_Api {
 		if ( empty( $repos_to_monitor ) ) {
 			return new WP_REST_Response(
 				esc_html__( 'You currently do not monitor activity on any repository. You cannot use this option yet.', 'ghactivity' ),
+				200
+			);
+		}
+
+		// Reset full sync status.
+		if ( isset( $options[ $repo . '_full_sync' ], $request['reset'] ) && 'true' === $request['reset'] ) {
+			unset( $options[ $repo . '_full_sync' ] );
+			update_option( 'ghactivity', $options );
+			return new WP_REST_Response(
+				esc_html__( 'Full sync status reset', 'ghactivity' ),
 				200
 			);
 		}

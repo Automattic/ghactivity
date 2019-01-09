@@ -662,9 +662,10 @@ class GHActivity_Calls {
 	 * @return bool $done Returns true when done.
 	 */
 	public function full_issue_sync( $repo_slug, $reset = false ) {
-		error_log( 'FULL ISSUE SYNC STARTED FOR' . $repo_slug );
+		error_log( 'FULL ISSUE SYNC STARTED FOR ' . $repo_slug );
 
-		if ( $reset ) {
+		if ( true === $reset ) {
+			error_log( 'RESETING STATUS FOR ' . $repo_slug );
 			$this->update_option( $repo_slug . '_full_sync', null );
 		}
 
