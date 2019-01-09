@@ -308,7 +308,8 @@ class GHActivity_Calls {
 							)
 						)
 					) {
-						$this->log_issue( $event );
+						$issue_details = $this->get_issue_details( $event );
+						$this->record_issue_details( $issue_details );
 					}
 
 					// Finally, publish our event.
@@ -367,18 +368,18 @@ class GHActivity_Calls {
 				}
 			}
 
-			$this->update_issue_records();
+			$this->update_issue_records_meta();
 		}
 	}
 
 	/**
-	 * Get info about a specific issue/PR and record it in our ghactivity_issue CPT.
+	 * Get info about a specific issue/PR and prepare it to be recorded in our ghactivity_issue CPT.
 	 *
 	 * @since 2.0.0
 	 *
 	 * @param Object $event GitHub event data.
 	 */
-	private function log_issue( $event ) {
+	private function get_issue_details( $event ) {
 		// Are we backfilling issues and PRs? In this case we hit a different endpoint, with different data structure.
 		if ( ! isset( $event->type ) ) {
 			$issue_type = ( isset( $event->pull_request ) ? 'pull_request' : 'issue' );
@@ -441,7 +442,7 @@ class GHActivity_Calls {
 			'creator'    => $creator,
 			'labels'     => $labels,
 		);
-		$this->record_issue_details( $issue_details );
+		return $issue_details;
 	}
 
 	/**
@@ -465,6 +466,26 @@ class GHActivity_Calls {
 	 */
 	private function record_issue_details( $issue_details ) {
 		$post_id = GHActivity_Queries::find_gh_issue( $issue_details['repo_name'], $issue_details['number'] );
+		error_log( $issue_details['repo_name'] . ' :: ' . $issue_details['number'] . ' :: ' . $post_id );
+
+		$meta = array(
+			'number'   => absint( $issue_details['number'] ),
+			'comments' => absint( $issue_details['comments'] ),
+		);
+
+		$post_content = sprintf(
+			'<h3 class="issue-title"><a href="https://github.com/%2$s/issues/%3$s">%1$s</a></h3>
+			<ul>
+				<li>%4$s %5$s</li>
+				<li>Comments: %6$s</li>
+			</ul>',
+			esc_html( $issue_details['issue_name'] ),
+			esc_attr( $issue_details['repo_name'] ),
+			absint( $issue_details['number'] ),
+			esc_html__( 'Labels:', 'ghactivity' ),
+			implode( ', ', $issue_details['labels'] ),
+			absint( $issue_details['comments'] )
+		);
 
 		if ( ! $post_id ) {
 			// Create taxonomies.
@@ -476,24 +497,6 @@ class GHActivity_Calls {
 				'ghactivity_issues_type'   => $issue_details['type'],
 			);
 
-			$meta = array(
-				'number'   => absint( $issue_details['number'] ),
-				'comments' => absint( $issue_details['comments'] ),
-			);
-
-			$post_content = sprintf(
-				'<h3 class="issue-title"><a href="https://github.com/%2$s/issues/%3$s">%1$s</a></h3>
-				<ul>
-					<li>%4$s %5$s</li>
-					<li>Comments: %6$s</li>
-				</ul>',
-				esc_html( $issue_details['issue_name'] ),
-				esc_attr( $issue_details['repo_name'] ),
-				absint( $issue_details['number'] ),
-				esc_html__( 'Labels:', 'ghactivity' ),
-				implode( ', ', $issue_details['labels'] ),
-				absint( $issue_details['comments'] )
-			);
 			$issue_args = array(
 				'post_title'   => $issue_details['title'],
 				'post_type'    => 'ghactivity_issue',
@@ -503,6 +506,7 @@ class GHActivity_Calls {
 				'meta_input'   => $meta,
 				'post_content' => $post_content,
 			);
+
 			$post_id = wp_insert_post( $issue_args );
 
 			/**
@@ -515,23 +519,6 @@ class GHActivity_Calls {
 			$taxonomies = array(
 				'ghactivity_issues_state'  => $issue_details['state'],
 				'ghactivity_issues_labels' => $issue_details['labels'],
-			);
-			$meta = array(
-				'number'   => absint( $issue_details['number'] ),
-				'comments' => absint( $issue_details['comments'] ),
-			);
-			$post_content = sprintf(
-				'<h3 class="issue-title"><a href="https://github.com/%2$s/issues/%3$s">%1$s</a></h3>
-				<ul>
-					<li>%4$s %5$s</li>
-					<li>Comments: %6$s</li>
-				</ul>',
-				esc_html( $issue_details['issue_name'] ),
-				esc_attr( $issue_details['repo_name'] ),
-				absint( $issue_details['number'] ),
-				esc_html__( 'Labels:', 'ghactivity' ),
-				implode( ', ', $issue_details['labels'] ),
-				absint( $issue_details['comments'] )
 			);
 
 			$issue_args = array(
@@ -550,6 +537,7 @@ class GHActivity_Calls {
 				$term_taxonomy_ids = wp_set_object_terms( $post_id, $value, $taxonomy, false );
 			}
 		} // End if.
+		return $post_id;
 	}
 
 	/**
@@ -563,16 +551,17 @@ class GHActivity_Calls {
 	}
 
 	/**
-	 * Record any label updates into taxonomy meta of issue post.
-	 * It designed to work with repository issues events & with specific issue events.
+	 * Record any label updates into taxonomy meta of issue CPT.
+	 * It is designed to work with repository issue events & with specific issue events.
 	 * To make it work with latter - $options array should be passed with post_id, repo_name, issue_number values
 	 *
 	 * @since 2.1
 	 *
-	 * @param array $event_list Event object as it returned from Github API.
+	 * @param array $event_list Events object as it returned from Github API.
 	 * @param array $options List of options which is used when passing list issue-specific events.
 	 */
-	public function update_issue_records( $event_list = null, $options = null ) {
+	public function update_issue_records_meta( $event_list = null, $options = null ) {
+		wp_suspend_cache_addition( true );
 		if ( ! is_array( $event_list ) && ! is_array( $options ) ) {
 			$event_list = $this->api->get_github_issue_events();
 		}
@@ -598,10 +587,10 @@ class GHActivity_Calls {
 				$repo_name    = $options['repo_name'];
 				$post_id      = $options['post_id'];
 			} else {
-				preg_match( '/(?<=repos\/)(.*?)(?=\/issues)/', $event->url, $match );
 				if ( ! isset( $event->issue->number ) ) {
 					continue;
 				}
+				preg_match( '/(?<=repos\/)(.*?)(?=\/issues)/', $event->url, $match );
 				$issue_number = $event->issue->number;
 				$repo_name    = $match[0];
 				$post_id      = GHActivity_Queries::find_gh_issue( $repo_name, $issue_number );
@@ -614,11 +603,9 @@ class GHActivity_Calls {
 
 			// If issue is closed/reopened - update ghactivity_issues_state accordingly, and continue to next event.
 			if ( 'closed' === $event->event ) {
-				error_log( '  -- Setting ghactivity_issues_state as closed' );
 				wp_set_post_terms( $post_id, 'closed', 'ghactivity_issues_state', false );
 				continue;
 			} elseif ( 'reopened' === $event->event ) {
-				error_log( '  -- Setting ghactivity_issues_state as open' );
 				wp_set_post_terms( $post_id, 'open', 'ghactivity_issues_state', false );
 				continue;
 			}
@@ -626,10 +613,8 @@ class GHActivity_Calls {
 			// Update label list according to event data.
 			if ( 'labeled' === $event->event ) {
 				// Add missing labels if needed.
-				error_log( '  -- Labeled. Adding: ' . $event->label->name );
 				wp_set_post_terms( $post_id, $event->label->name, 'ghactivity_issues_labels', true );
 			} elseif ( 'unlabeled' === $event->event ) {
-				error_log( '  -- Unlabeled. Removing: ' . $event->label->name );
 				wp_remove_object_terms( $post_id, $event->label->name, 'ghactivity_issues_labels' );
 			}
 
@@ -663,7 +648,6 @@ class GHActivity_Calls {
 			}
 			$record['status']        = $event->event;
 			$record[ $event->event ] = $event->created_at;
-			error_log( '  -- Updating ghactivity_issues_labels tax.' );
 			update_term_meta( $term->term_id, $slug, $record );
 		}
 	}
@@ -678,6 +662,8 @@ class GHActivity_Calls {
 	 * @return bool $done Returns true when done.
 	 */
 	public function full_issue_sync( $repo_slug ) {
+		error_log( 'FULL ISSUE SYNC STARTED FOR' . $repo_slug );
+
 		/**
 		 * First, let's get info about the sync.
 		 *
@@ -706,8 +692,9 @@ class GHActivity_Calls {
 			$status = array(
 				'status' => 'in_progress',
 				// dividing by 100 here because we are getting 100 issues per page.
-				'pages'  => ( floor( $this->api->get_repo_issues_count( $repo->name ) / 100 ) + 1 ),
+				'pages'  => ( (int) floor( $this->api->get_repo_open_issues_count( $repo->name ) / 100 ) + 1 ),
 			);
+
 			// Update our option.
 			$this->update_option( $repo_slug . '_full_sync', $status );
 		}
@@ -715,16 +702,23 @@ class GHActivity_Calls {
 		// Set WP_IMPORTING to avoid triggering things like subscription emails.
 		defined( 'WP_IMPORTING' ) || define( 'WP_IMPORTING', true );
 
-		// let's start looping.
+		$parsed_post_ids = [];
+
+		// Go through all opened issues in GitHub and eventually create/update relevant CPT.
 		do {
 			$issues_body = $this->api->get_github_issues( $repo->name, $status['pages'] );
+			error_log( 'GOING through page: ' . $status['pages'] . '. Count: ' . count( $issues_body ) );
 
 			/**
 			 * Only go through the event list if we have valid event array.
 			 */
 			if ( isset( $issues_body ) && is_array( $issues_body ) ) {
 				foreach ( $issues_body as $issue ) {
-					$this->log_issue( $issue );
+					set_time_limit( 300 );
+					$issue_details = $this->get_issue_details( $issue );
+					$post_id       = $this->record_issue_details( $issue_details );
+					$this->update_single_issue_record( $post_id );
+					$parsed_post_ids[] = $post_id;
 				}
 			}
 
@@ -732,14 +726,44 @@ class GHActivity_Calls {
 			$status['pages']--;
 		} while ( 'in_progress' === $status['status'] && 0 !== $status['pages'] );
 
+		// Now we need to sync up all the remaining GHActivityIssue CPT, to reflect all the recent changes in GitHub
+		$post_ids = GHActivity_Queries::get_all_open_gh_issues( $repo->name );
+		foreach ( $post_ids as $post_id ) {
+			if ( ! in_array( $post_id, $parsed_post_ids, true ) ) {
+				$this->update_single_issue_record( $post_id );
+			}
+		}
 		// We're done. Save options.
 		$status = array(
 			'status' => 'done',
 			'pages'  => 0,
 		);
 		$this->update_option( $repo_slug . '_full_sync', $status );
-
+		error_log( 'DONE!!!' );
 		return true;
+	}
+
+	/**
+	 * Updates single GHActivityIssue CPT with up-to-date metadata (labels, status, etc)
+	 */
+	function update_single_issue_record( $post_id ) {
+		set_time_limit( 300 );
+		$terms = get_terms( array(
+			'object_ids' => $post_id,
+			'taxonomy'   => 'ghactivity_repo',
+		) );
+		if ( empty( $terms ) ) {
+			return;
+		}
+		$repo_name    = $terms[0]->name;
+		$issue_number = get_post_meta( $post_id, 'number', true );
+		$response     = $this->api->get_github_issue_events( $repo_name, $issue_number );
+		$options      = array(
+			'issue_number' => $issue_number,
+			'repo_name'    => $repo_name,
+			'post_id'      => $post_id,
+		);
+		$this->update_issue_records_meta( $response, $options );
 	}
 }
 new GHActivity_Calls();

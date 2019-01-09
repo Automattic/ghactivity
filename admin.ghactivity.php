@@ -472,7 +472,7 @@ function label_scan_action() {
 				'post_id'      => $post_id,
 			);
 			error_log( 'Rescanning ' . $repo . ' :: ' . $issue_number );
-			$gha->update_issue_records( $response, $options );
+			$gha->update_issue_records_meta( $response, $options );
 		}
 	}
 	error_log( 'Done with rescan!' );

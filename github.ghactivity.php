@@ -164,7 +164,7 @@ class GHActivity_GHApi {
 	 *
 	 * @return int $issues_number Number of open issues.
 	 */
-	public function get_repo_issues_count( $repo_name ) {
+	public function get_repo_open_issues_count( $repo_name ) {
 		if ( empty( $repo_name ) ) {
 			// Fallback.
 			return 0;
@@ -214,7 +214,7 @@ class GHActivity_GHApi {
 				esc_html( $issue_number ? '/' . $issue_number : '' ),
 				$this->token
 			);
-			$single_response_body = $this->get_all_github_data( $query_url );
+			$single_response_body = $this->get_all_github_data( $query_url, array(), 500 );
 			$response_body        = array_merge( $single_response_body, $response_body );
 		}
 		return $response_body;
@@ -306,10 +306,11 @@ class GHActivity_GHApi {
 	 *
 	 * @param string $query_url GitHub API URL to hit.
 	 * @param array  $headers Additional headers.
+	 * @param array  $max_results Maximum number of results you want to get. Useful when fetching endpoints with "endless" data.
 	 *
 	 * @return array $response_body Response body for each call.
 	 */
-	public function get_all_github_data( $query_url, $headers = array() ) {
+	public function get_all_github_data( $query_url, $headers = array(), $max_results = null ) {
 		$page        = 1;
 		$all_results = array();
 		// Fetch API until empty array will be returned.
@@ -318,7 +319,13 @@ class GHActivity_GHApi {
 			$body            = $this->get_github_data( $paged_query_url, $headers );
 			$all_results     = array_merge( $all_results, $body );
 			$page++;
-		} while ( ! empty( $body ) );
+
+			// We want to get all the data in case $max_results is null.
+			$condition = ! empty( $body );
+			if ( isset( $max_results ) ) {
+				$condition = ! empty( $body ) || count( $all_results );
+			}
+		} while ( $condition );
 		return $all_results;
 	}
 
