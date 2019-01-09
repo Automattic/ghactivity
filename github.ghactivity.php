@@ -221,7 +221,7 @@ class GHActivity_GHApi {
 	}
 
 	/**
-	 * Remote call to get all label events for every monitored repo
+	 * Remote call to get all open issues for specified repo
 	 *
 	 * @since 2.1.0
 	 *
@@ -230,12 +230,13 @@ class GHActivity_GHApi {
 	 *
 	 * @return array
 	 */
-	public function get_github_issues( $repo_name, $page_number = 1 ) {
+	public function get_github_issues( $repo_name, $page_number = 1, $issues_state = 'open' ) {
 		$query_url = sprintf(
-			'https://api.github.com/repos/%1$s/issues?access_token=%2$s&page=%3$s&per_page=100',
+			'https://api.github.com/repos/%1$s/issues?access_token=%2$s&page=%3$s&per_page=100&state=%4$s',
 			esc_html( $repo_name ),
 			$this->token,
-			$page_number
+			$page_number,
+			$issues_state
 		);
 		return $this->get_github_data( $query_url );
 	}
@@ -323,7 +324,7 @@ class GHActivity_GHApi {
 			// We want to get all the data in case $max_results is null.
 			$condition = ! empty( $body );
 			if ( isset( $max_results ) ) {
-				$condition = ! empty( $body ) || count( $all_results );
+				$condition = count( $all_results ) < $max_results && ! empty( $body );
 			}
 		} while ( $condition );
 		return $all_results;
@@ -348,6 +349,14 @@ class GHActivity_GHApi {
 			|| 200 != $data['response']['code']
 			|| empty( $data['body'] )
 		) {
+			if ( 403 === $data['response']['code'] ) {
+				// Throwing error in case we reached the rate limit. We might be smart here, and wait till rate limit resets
+				// https://developer.github.com/v3/#rate-limiting
+				$rate_limit = $data['headers']->offsetGet( 'X-RateLimit-Remaining' );
+				if ( isset( $rate_limit ) && '0' === $rate_limit ) {
+					throw new Error( 'GitHub rate limit exceeded. Just wait ;)' );
+				}
+			}
 			return $response_body;
 		}
 
