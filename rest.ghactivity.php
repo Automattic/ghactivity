@@ -459,7 +459,7 @@ class Ghactivity_Api {
 					update_option( 'gha_remove_duplicate_issues_' . $name, $parsed_issues );
 				} else {
 					error_log( 'Trashing: ' . $name . ' :: ' . $issue_number . ' :: ' . $post_id );
-					wp_trash_post( $post_id, true );
+					wp_trash_post( $post_id );
 				}
 			}
 		}
