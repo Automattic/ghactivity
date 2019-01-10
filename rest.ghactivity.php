@@ -378,7 +378,7 @@ class Ghactivity_Api {
 		}
 
 		// [average_time, date_of_record, recorded_issues]
-		$records = GHActivity_Queries::fetch_average_label_time( $id, null );
+		$records = GHActivity_Queries::fetch_average_label_time( $id );
 
 		$response = array(
 			'id'      => $id,

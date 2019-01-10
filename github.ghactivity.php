@@ -222,6 +222,7 @@ class GHActivity_GHApi {
 
 	/**
 	 * Remote call to get all open issues for specified repo
+	 * Additional parms can any of these: https://developer.github.com/v3/issues/#parameters
 	 *
 	 * @since 2.1.0
 	 *
@@ -230,13 +231,14 @@ class GHActivity_GHApi {
 	 *
 	 * @return array
 	 */
-	public function get_github_issues( $repo_name, $page_number = 1, $issues_state = 'open' ) {
+	public function get_github_issues( $repo_name, $page_number = 1, $issues_state = 'open', $additional_params = '' ) {
 		$query_url = sprintf(
-			'https://api.github.com/repos/%1$s/issues?access_token=%2$s&page=%3$s&per_page=100&state=%4$s',
+			'https://api.github.com/repos/%1$s/issues?access_token=%2$s&page=%3$s&per_page=100&state=%4$s%5$s',
 			esc_html( $repo_name ),
 			$this->token,
 			$page_number,
-			$issues_state
+			$issues_state,
+			urlencode( $additional_params )
 		);
 		return $this->get_github_data( $query_url );
 	}
