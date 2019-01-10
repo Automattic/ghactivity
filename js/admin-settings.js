@@ -35,4 +35,26 @@ jQuery( document ).ready( function( $ ) {
 			$( '#ghactivity_redo_graphs_output' ).html( response ).show();
 		});
 	});
+
+	$( '.reset_sync_status' ).on( 'click', function( e ) {
+		// Get the name of the repo we will need to synchronize.
+		var repo_id = $(this).attr( 'id' );
+		var repo    = repo_id.replace('_reset_sync_status','');
+
+		// Make a query to our custom endpoint to launch sync.
+		$.ajax({
+			url: ghactivity_settings.api_url + 'ghactivity/v1/sync/' + repo + '?reset=true',
+			method: 'POST',
+			beforeSend : function( xhr ) {
+				xhr.setRequestHeader( 'X-WP-Nonce', ghactivity_settings.api_nonce );
+			}
+		}).done( function ( response ) {
+			$( '#' + repo_id ).remove();
+			$( '#' + repo_id ).attr( 'value', '' );
+			$( '#' + repo_id ).removeClass( 'disabled' );
+			$( '#' + repo + '_full_sync_details' ).html( response ).hide();
+
+			console.log(response);
+		});
+	});
 });

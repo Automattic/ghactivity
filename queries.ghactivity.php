@@ -328,34 +328,63 @@ class GHActivity_Queries {
 			'name'     => $labels,
 		);
 
-		$terms            = get_terms( $query );
-		$first_term       = array_shift( $terms );
-		$intersected_meta = get_term_meta( $first_term->term_id );
+		$terms          = get_terms( $query );
+		$merged_results = [];
 
 		// Find all the records which appears in every term meta.
 		// e.g. find issues which marked with the combination of all $labels.
 		foreach ( $terms as $term ) {
-			$meta  = get_term_meta( $term->term_id );
-			$intersected_meta = array_intersect_key( $intersected_meta, $meta );
+			$meta           = get_term_meta( $term->term_id );
+			$merged_results = array_merge_recursive( $merged_results, $meta );
 		}
+
+		$merged_results = array_filter(
+			$merged_results,
+			function( $v ) use ( $labels ) {
+				return count( $v ) === count( $labels );
+			},
+			ARRAY_FILTER_USE_BOTH
+		);
 
 		/**
 		 * Iterate over all the records and capture only opened & currently labeled issues
 		 * Also fills the $dates & $slugs arrays with slugs and labeled dates
 		 */
-		foreach ( $intersected_meta as $repo_slug => $serialized ) {
-			// count only issues from specific repo.
-			if ( strpos( strtolower( $repo_slug ), strtolower( $repo_name ) ) === 0 ) {
-				$issue_number = explode( '#', $repo_slug )[1];
-				$post_id      = self::find_open_gh_issue( $repo_name, $issue_number );
-				$label_ary    = unserialize( $serialized[0] );
+		foreach ( $merged_results as $repo_slug => $serialized ) {
+			// skip issues from other repos (in case there identical label names)
+			if ( strpos( strtolower( $repo_slug ), strtolower( $repo_name ) ) !== 0 ) {
+				continue;
+			}
 
-				// We want to capture only opened, labeled issues.
-				if ( $post_id && 'labeled' === $label_ary['status'] ) {
-					$time                = time() - strtotime( $label_ary['labeled'] );
-					$dates[]             = $time;
-					$slugs[ $repo_slug ] = $time;
+			$issue_number   = explode( '#', $repo_slug )[1];
+			$post_id        = self::find_open_gh_issue( $repo_name, $issue_number );
+			$status_labeled = true;
+			$time           = time();
+			$label_ary      = array_map(
+				function( $value ) {
+					return unserialize( $value );
+				},
+				$serialized
+			);
+
+			// figure out if the issue is actually labeled with these label(s)
+			// also looking for latest labeled label to use for average label time calculation.
+			foreach ( $label_ary as $arr ) {
+				if ( 'labeled' !== $arr['status'] ) {
+					$status_labeled = false;
 				}
+
+				// how much time passed since issue was labeled.
+				$label_time = time() - strtotime( $arr['labeled'] );
+				if ( $label_time < $time ) {
+					$time = $label_time;
+				}
+			}
+
+			// We want to capture only opened, labeled issues.
+			if ( $post_id && true === $status_labeled ) {
+				$dates[]             = $time;
+				$slugs[ $repo_slug ] = $time;
 			}
 		}
 		return array( (int) array_sum( $dates ) / count( $dates ), $slugs );
@@ -465,6 +494,7 @@ class GHActivity_Queries {
 		// FIXME: Add caching
 		$posts = get_posts( $args );
 
+		// [average_time, date_of_record, recorded_issues]
 		function get_post_content( $post ) {
 			return array(
 				(int) $post->post_content,

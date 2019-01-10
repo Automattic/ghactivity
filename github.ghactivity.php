@@ -164,7 +164,7 @@ class GHActivity_GHApi {
 	 *
 	 * @return int $issues_number Number of open issues.
 	 */
-	public function get_repo_issues_count( $repo_name ) {
+	public function get_repo_open_issues_count( $repo_name ) {
 		if ( empty( $repo_name ) ) {
 			// Fallback.
 			return 0;
@@ -214,14 +214,15 @@ class GHActivity_GHApi {
 				esc_html( $issue_number ? '/' . $issue_number : '' ),
 				$this->token
 			);
-			$single_response_body = $this->get_all_github_data( $query_url );
+			$single_response_body = $this->get_all_github_data( $query_url, array(), 500 );
 			$response_body        = array_merge( $single_response_body, $response_body );
 		}
 		return $response_body;
 	}
 
 	/**
-	 * Remote call to get all label events for every monitored repo
+	 * Remote call to get all open issues for specified repo
+	 * Additional parms can any of these: https://developer.github.com/v3/issues/#parameters
 	 *
 	 * @since 2.1.0
 	 *
@@ -230,12 +231,14 @@ class GHActivity_GHApi {
 	 *
 	 * @return array
 	 */
-	public function get_github_issues( $repo_name, $page_number = 1 ) {
+	public function get_github_issues( $repo_name, $page_number = 1, $issues_state = 'open', $additional_params = '' ) {
 		$query_url = sprintf(
-			'https://api.github.com/repos/%1$s/issues?access_token=%2$s&page=%3$s&per_page=100',
+			'https://api.github.com/repos/%1$s/issues?access_token=%2$s&page=%3$s&per_page=100&state=%4$s%5$s',
 			esc_html( $repo_name ),
 			$this->token,
-			$page_number
+			$page_number,
+			$issues_state,
+			urlencode( $additional_params )
 		);
 		return $this->get_github_data( $query_url );
 	}
@@ -306,10 +309,11 @@ class GHActivity_GHApi {
 	 *
 	 * @param string $query_url GitHub API URL to hit.
 	 * @param array  $headers Additional headers.
+	 * @param array  $max_results Maximum number of results you want to get. Useful when fetching endpoints with "endless" data.
 	 *
 	 * @return array $response_body Response body for each call.
 	 */
-	public function get_all_github_data( $query_url, $headers = array() ) {
+	public function get_all_github_data( $query_url, $headers = array(), $max_results = null ) {
 		$page        = 1;
 		$all_results = array();
 		// Fetch API until empty array will be returned.
@@ -318,7 +322,13 @@ class GHActivity_GHApi {
 			$body            = $this->get_github_data( $paged_query_url, $headers );
 			$all_results     = array_merge( $all_results, $body );
 			$page++;
-		} while ( ! empty( $body ) );
+
+			// We want to get all the data in case $max_results is null.
+			$condition = ! empty( $body );
+			if ( isset( $max_results ) ) {
+				$condition = count( $all_results ) < $max_results && ! empty( $body );
+			}
+		} while ( $condition );
 		return $all_results;
 	}
 
@@ -341,6 +351,14 @@ class GHActivity_GHApi {
 			|| 200 != $data['response']['code']
 			|| empty( $data['body'] )
 		) {
+			if ( 403 === $data['response']['code'] ) {
+				// Throwing error in case we reached the rate limit. We might be smart here, and wait till rate limit resets
+				// https://developer.github.com/v3/#rate-limiting
+				$rate_limit = $data['headers']->offsetGet( 'X-RateLimit-Remaining' );
+				if ( isset( $rate_limit ) && '0' === $rate_limit ) {
+					throw new Error( 'GitHub rate limit exceeded. Just wait ;)' );
+				}
+			}
 			return $response_body;
 		}
 

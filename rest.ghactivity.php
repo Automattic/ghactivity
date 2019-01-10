@@ -34,7 +34,7 @@ class Ghactivity_Api {
 		 *
 		 * @since 2.0.0
 		 */
-		register_rest_route( 'ghactivity/v1', '/sync/(?P<repo>[a-zA-Z0-9-]+)', array(
+		register_rest_route( 'ghactivity/v1', '/sync/(?P<repo>[0-9a-z\-_\/]+)', array(
 			'methods'             => WP_REST_Server::EDITABLE,
 			'callback'            => array( $this, 'trigger_sync' ),
 			'permission_callback' => array( $this, 'permissions_check' ),
@@ -177,6 +177,16 @@ class Ghactivity_Api {
 		if ( empty( $repos_to_monitor ) ) {
 			return new WP_REST_Response(
 				esc_html__( 'You currently do not monitor activity on any repository. You cannot use this option yet.', 'ghactivity' ),
+				200
+			);
+		}
+
+		// Reset full sync status.
+		if ( isset( $options[ $repo . '_full_sync' ], $request['reset'] ) && 'true' === $request['reset'] ) {
+			unset( $options[ $repo . '_full_sync' ] );
+			update_option( 'ghactivity', $options );
+			return new WP_REST_Response(
+				esc_html__( 'Full sync status reset', 'ghactivity' ),
 				200
 			);
 		}
@@ -368,7 +378,7 @@ class Ghactivity_Api {
 		}
 
 		// [average_time, date_of_record, recorded_issues]
-		$records = GHActivity_Queries::fetch_average_label_time( $id, null );
+		$records = GHActivity_Queries::fetch_average_label_time( $id );
 
 		$response = array(
 			'id'      => $id,
@@ -459,7 +469,7 @@ class Ghactivity_Api {
 					update_option( 'gha_remove_duplicate_issues_' . $name, $parsed_issues );
 				} else {
 					error_log( 'Trashing: ' . $name . ' :: ' . $issue_number . ' :: ' . $post_id );
-					wp_trash_post( $post_id, true );
+					wp_trash_post( $post_id );
 				}
 			}
 		}
