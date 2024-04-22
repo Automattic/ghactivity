@@ -1,5 +1,8 @@
 # Ghactivity
 
+> [!WARNING]
+> **This project is no longer maintained. If you are interested in gathering GitHub Activity information from GitHub, we would recommend looking at [the GraphQL API](https://docs.github.com/en/graphql).**
+
 **Track your GitHub activity and your team's**
 
 ## How the plugin works
